@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "senzing-bootcamp",
+  "version": "0.6.1",
+  "description": "Guided bootcamp for learning Senzing entity resolution with GitHub Copilot.",
+  "author": {
+    "name": "Senzing"
+  },
+  "homepage": "https://github.com/Senzing/senzing-bootcamp-copilot-plugin",
+  "repository": "https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development",
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,16 @@
+{
+  "canonical_operations": [
+    "parity-check",
+    "escalate-to-parent",
+    "feedback-to-issues",
+    "implement-github-issue",
+    "retrofit-from-public",
+    "production-readiness-audit",
+    "dry-run",
+    "release",
+    "propagate-to-public"
+  ],
+  "external_issue_writers": ["escalate-to-parent"],
+  "public_worktree_writers": ["propagate-to-public"],
+  "git_publishers": []
+}
