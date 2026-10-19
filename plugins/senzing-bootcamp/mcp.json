@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "senzing": {
+      "type": "http",
+      "url": "https://mcp.senzing.com/mcp"
+    }
+  }
+}

@@ -1,0 +1,180 @@
+# JSON is a valid YAML 1.2 subset so the build has no runtime YAML dependency.
+{
+  "contract_version": 1,
+  "upstream": {
+    "repository": "https://github.com/Senzing/senzing-bootcamp-claude-plugin.git",
+    "source_root": "plugins/senzing-bootcamp",
+    "version_file": ".claude-plugin/plugin.json"
+  },
+  "invariant_manifest": {
+    "repository": "https://github.com/docktermj/senzing-bootcamp-claude-plugin-development.git",
+    "path": "invariant-manifest.json"
+  },
+  "invariant_disposition_register": {
+    "source_version": "0.6.1",
+    "source_commit": "d3d99523f88957cd9dda2d29375892bf2c557663",
+    "honored": "all parent INV-NNN identifiers except those explicitly preserved_restated or discounted",
+    "preserved_restated": [
+      {
+        "id": "INV-052",
+        "mechanism": "Copilot plugin hooks use ${PLUGIN_ROOT} and invoke quoted python3 script paths; the generated hooks and port validator enforce this."
+      },
+      {
+        "id": "INV-063",
+        "mechanism": "Copilot model availability is exposed by the selected client and account; model/effort choice is guidance, not a fixed model identifier. Host selection must be confirmed in the per-release manual record."
+      },
+      {
+        "id": "INV-069",
+        "mechanism": "The inherited stage and turn rules are retained in the transformed skills; Copilot agentStop and prompt hooks provide host mechanisms where available, with the interaction contract documenting client-specific gaps."
+      },
+      {
+        "id": "INV-098",
+        "mechanism": "Stage-switch and completion gates remain explicit in the curriculum; no model-specific command is assumed."
+      },
+      {
+        "id": "INV-114",
+        "mechanism": "The required user-visible confirmation is stated in the skills and checked during the Copilot dry run; it is not treated as a host-enforced gate."
+      },
+      {
+        "id": "INV-137",
+        "mechanism": "The parent’s question-by-question flow is preserved in skills. Copilot agentStop can request continuation, but conversational parity is a manual release gate."
+      },
+      {
+        "id": "INV-138",
+        "mechanism": "The inherited guided interaction is retained and verified in the Copilot conversational dry run; unverified client behavior is advisory, not a passing check."
+      },
+      {
+        "id": "INV-139",
+        "mechanism": "The inherited guided interaction is retained and verified in the Copilot conversational dry run; unverified client behavior is advisory, not a passing check."
+      },
+      {
+        "id": "INV-140",
+        "mechanism": "The inherited guided interaction is retained and verified in the Copilot conversational dry run; unverified client behavior is advisory, not a passing check."
+      },
+      {
+        "id": "INV-141",
+        "mechanism": "The inherited guided interaction is retained and verified in the Copilot conversational dry run; unverified client behavior is advisory, not a passing check."
+      },
+      {
+        "id": "INV-236",
+        "mechanism": "Parent curriculum and turn guarantees remain in the skills; clients without a matching lifecycle hook rely on the documented advisory instruction and manual release gate."
+      }
+    ],
+    "discounted": []
+  },
+  "output_root": "plugins/senzing-bootcamp",
+  "rules": [
+    {
+      "id": "copy-docs",
+      "kind": "copy",
+      "match": ["docs/**"],
+      "reason": "The parent owns bootcamp runtime documentation and examples."
+    },
+    {
+      "id": "copy-scripts",
+      "kind": "copy",
+      "match": ["scripts/**"],
+      "reason": "The parent owns curriculum runtime helpers; Copilot-specific hook declarations are supplied separately."
+    },
+    {
+      "id": "copy-skills",
+      "kind": "copy",
+      "match": ["skills/**"],
+      "reason": "The parent owns the bootcamp curriculum and its skills."
+    },
+    {
+      "id": "copy-mcp-config",
+      "kind": "copy",
+      "match": [".mcp.json"],
+      "destination": "mcp.json",
+      "reason": "Agent Plugins discovers MCP servers from the portable root mcp.json file."
+    },
+    {
+      "id": "exclude-claude-manifest",
+      "kind": "ignore",
+      "match": [".claude-plugin/**"],
+      "reason": "The source Claude manifest is replaced with the Copilot Agent Plugins manifest."
+    },
+    {
+      "id": "exclude-claude-commands",
+      "kind": "ignore",
+      "match": ["commands/**"],
+      "reason": "Claude slash-command entry points are represented by the parent’s portable bootcamp skills."
+    },
+    {
+      "id": "exclude-claude-hooks",
+      "kind": "ignore",
+      "match": ["hooks/**"],
+      "reason": "Claude event names and payloads are not Copilot hooks; a host-specific hook map is generated."
+    }
+  ],
+  "substitutions": [
+    {"old": "Claude Code", "new": "GitHub Copilot"},
+    {"old": "Claude's", "new": "GitHub Copilot's"},
+    {"old": "Claude", "new": "GitHub Copilot"},
+    {"old": "claude", "new": "copilot"},
+    {"old": "${CLAUDE_PLUGIN_ROOT}", "new": "${PLUGIN_ROOT}"},
+    {"old": "CLAUDE_PLUGIN_ROOT", "new": "PLUGIN_ROOT"},
+    {"old": "$CLAUDE_EFFORT", "new": "no portable effort setting"},
+    {"old": ".claude-plugin", "new": "plugin.json"},
+    {"old": ".claude", "new": ".github"},
+    {"old": "/start-bootcamp", "new": "the bootcamp-onboarding skill"},
+    {"old": "/graduate", "new": "the graduation skill"},
+    {"old": "/package-bootcamp", "new": "the package-bootcamp skill"},
+    {"old": "/bootcamp-note", "new": "the bootcamp note workflow"},
+    {"old": "/bootcamp-feedback", "new": "the bootcamp feedback workflow"},
+    {"old": "UserPromptSubmit", "new": "userPromptSubmitted"},
+    {"old": "SessionStart", "new": "sessionStart"},
+    {"old": "SessionEnd", "new": "sessionEnd"},
+    {"old": "PreToolUse", "new": "preToolUse"},
+    {"old": "PreCompact", "new": "pre-compaction (no Copilot hook is documented)"},
+    {"old": "Stop hook", "new": "agentStop hook"}
+  ],
+  "generated_artifacts": [
+    {
+      "path": "plugin.json",
+      "format": "json",
+      "value": {
+        "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+        "name": "senzing-bootcamp",
+        "version": "${RELEASE_VERSION}",
+        "description": "Guided bootcamp for learning Senzing entity resolution with GitHub Copilot.",
+        "author": {"name": "Senzing"},
+        "homepage": "https://github.com/Senzing/senzing-bootcamp-copilot-plugin",
+        "repository": "https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "path": "com.github.copilot/hooks/hooks.json",
+      "format": "json",
+      "value": {
+        "version": 1,
+        "hooks": {
+          "sessionStart": [
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-start"}
+          ],
+          "userPromptSubmitted": [
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" user-prompt"}
+          ],
+          "preToolUse": [
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" pre-tool"}
+          ],
+          "agentStop": [
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" agent-stop"}
+          ],
+          "sessionEnd": [
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-end"}
+          ]
+        }
+      }
+    },
+    {
+      "path": "scripts/copilot-hooks.py",
+      "source": "tools/bootcamp-transform/copilot_hooks.py"
+    },
+    {"path": "LICENSE", "source": "LICENSE"},
+    {"path": "docs/copilot-host-mechanisms.md", "source": "docs/copilot-host-mechanisms.md"},
+    {"path": "docs/copilot-interaction-contract.md", "source": "docs/copilot-interaction-contract.md"}
+  ]
+}
