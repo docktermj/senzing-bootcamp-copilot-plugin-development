@@ -38,6 +38,42 @@ compatibility decisions, and `CPINV-NNN` invariants.
   phrase each as one testable `MUST` or `ALWAYS`, and add it exactly once to the
   subject index.
 
+## Maintainer boundaries
+
+- This is a public repository. Keep changes limited to this repository's work;
+  never commit credentials, secrets, or bootcamper personal data.
+- Pushes, pull-request creation, and filing or updating GitHub issues are
+  outward-facing actions. Obtain explicit maintainer approval for each such
+  action.
+- `submit_feedback` sends a message externally. Obtain explicit maintainer
+  approval for each submission; do not infer approval from local feedback
+  collection or triage.
+- Use the live Senzing MCP server before making Senzing-specific claims. Its
+  read-only tools are routine; reported MCP-server defects are routed to
+  Senzing feedback rather than to the parent repository.
+- `plugins/senzing-bootcamp/scripts/secret_patterns.py` is part of the
+  credential-detection boundary. Never place real secrets, credentials, or
+  personal records in it, including in test fixtures.
+- This repository's maintainer-operation surface is exactly the nine skills
+  registered in `tools/bootcamp-transform/operations.json`. Do not add or
+  rename `.github/skills/` entries without updating that registry and the
+  validator's required operation set.
+
+## Commit convention
+
+Use Conventional Commits with a lowercase type, imperative summary, no trailing
+period, and a 72-character maximum subject:
+
+```text
+type(scope): summary
+
+issue: #<number>
+```
+
+Every commit requires the `issue: #<number>` trailer. Use the same Conventional
+Commits form for pull-request titles. Include the required Copilot co-author
+trailer when creating commits.
+
 ## Commands
 
 Use Python 3.12, matching CI.
@@ -78,9 +114,9 @@ to remotes; only `escalate-to-parent` may create external issues, and only
 
 ## Senzing MCP
 
-The generated plugin's root `mcp.json` declares the `senzing` HTTP server at
-`https://mcp.senzing.com/mcp`. Preserve that root configuration when changing
-the transform contract or regenerating the plugin. Use the live Senzing MCP
-server to verify Senzing-specific claims and release behavior; do not treat the
-presence of `mcp.json` or a static check as evidence that a client can connect
-and make a call.
+The generated plugin's root `mcp.json` and this repository's `.github/mcp.json`
+declare the `senzing` HTTP server at `https://mcp.senzing.com/mcp`. Preserve the
+generated configuration when changing the transform contract. Use the live
+server to verify Senzing-specific claims and release behavior; do not treat a
+static configuration check as evidence that a client can connect and make a
+call.
