@@ -126,7 +126,11 @@ either one:
 
 ## Resuming
 
-Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase. During
+Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase.
+
+For this Copilot host, also follow
+[`copilot-turn-protocol.md`](copilot-turn-protocol.md) for the complete module start,
+same-turn Senzing grounding, exact question ending, and stakeholder-summary timing. During
 mapping, also read any `config/mapping_state_[datasource].json` checkpoint to resume a
 per-source `mapping_workflow` run where it left off.
 

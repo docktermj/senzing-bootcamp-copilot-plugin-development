@@ -126,6 +126,10 @@ Truth Set DATA.
 
 Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase.
 
+For this Copilot host, also follow
+[`copilot-turn-protocol.md`](copilot-turn-protocol.md) for the complete module start,
+same-turn Senzing grounding, exact question ending, and stakeholder-summary timing.
+
 **Success indicator:** ✅ The standalone snapshot exists at
 `docs/visualizations/truthset_verification.html` (built from a non-empty Truth Set) AND the live app
 served its endpoints and the entity-graph page; the web service is terminated and the Truth Set

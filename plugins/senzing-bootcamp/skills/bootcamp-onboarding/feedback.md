@@ -20,8 +20,8 @@ source is missing:
 
 - **Time:** the current date and time.
 - **Plugin version:** the `version` field of the plugin manifest, resolved exactly as
-  `onboarding-flow.md` step 0 specifies — `${PLUGIN_ROOT}/.copilot-plugin/plugin.json`, else
-  `<this-skill-dir>/../../.copilot-plugin/plugin.json`, else "Unknown". ⛔ Never found by searching
+  `onboarding-flow.md` step 0 specifies — `${PLUGIN_ROOT}/plugin.json`, else
+  `<this-skill-dir>/../../plugin.json`, else "Unknown". ⛔ Never found by searching
   the filesystem: a machine carrying two plugin checkouts then reports the wrong version (INV-252).
 - **Workstation:** the operating system and platform the bootcamper is running on, from the environment/system context — OS name and version, and architecture if available.
 - **Model and effort:** the model name/ID and the reasoning-effort level in use, from the environment/system context.

@@ -4,13 +4,15 @@
 from __future__ import annotations
 
 import json
-import os
+import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+WRITE_TOOLS = {"apply_patch", "create", "edit", "write", "write_file", "str_replace_editor"}
 
 
 def _payload() -> dict[str, Any]:
@@ -73,16 +75,132 @@ def user_prompt() -> None:
         print(json.dumps({"additionalContext": "\n\n".join(contexts)}))
 
 
+def _tool_calls(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    calls = payload.get("toolCalls")
+    if isinstance(calls, list):
+        if not calls or not all(isinstance(call, dict) for call in calls):
+            raise ValueError("preToolUse toolCalls must be a non-empty array of objects")
+        if not all(isinstance(call.get("name"), str) for call in calls):
+            raise ValueError("preToolUse toolCalls must include a tool name")
+        return calls
+    if "toolName" in payload:
+        if not isinstance(payload["toolName"], str):
+            raise ValueError("preToolUse toolName must be text")
+        return [{"name": payload["toolName"], "args": payload.get("toolArgs")}]
+    if "tool_name" in payload:
+        if not isinstance(payload["tool_name"], str):
+            raise ValueError("preToolUse tool_name must be text")
+        return [{"name": payload["tool_name"], "args": payload.get("tool_input")}]
+    raise ValueError("preToolUse payload did not include toolCalls or a tool name")
+
+
+def _write_targets(call: dict[str, Any]) -> list[str]:
+    name = call.get("name")
+    if isinstance(name, str):
+        name = name.lower()
+    args = call.get("args")
+    if isinstance(args, str) and name == "apply_patch":
+        prefixes = (
+            "*** Add File: ",
+            "*** Update File: ",
+            "*** Delete File: ",
+            "*** Move to: ",
+        )
+        return [
+            line[len(prefix):].strip()
+            for line in args.splitlines()
+            for prefix in prefixes
+            if line.startswith(prefix)
+        ]
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except json.JSONDecodeError:
+            return []
+    if isinstance(args, dict):
+        path = args.get("file_path") or args.get("filePath") or args.get("path")
+        if isinstance(path, str) and path:
+            return [path]
+    return []
+
+
 def pre_tool() -> None:
     payload = _payload()
-    result = _run("write-gate.py", payload)
-    if result.returncode == 2:
-        print(json.dumps({
-            "permissionDecision": "deny",
-            "permissionDecisionReason": result.stderr.strip() or "Bootcamp write gate denied this operation.",
-        }))
-    elif result.returncode:
-        raise RuntimeError(result.stderr.strip() or f"write-gate helper exited {result.returncode}")
+    for call in _tool_calls(payload):
+        name = call["name"]
+        if name.lower() not in WRITE_TOOLS:
+            continue
+        targets = _write_targets(call)
+        if not targets:
+            raise ValueError(f"Could not determine the write target for {name}")
+        for target in targets:
+            result = _run("write-gate.py", {
+                "tool_name": name,
+                "tool_input": {"file_path": target},
+            })
+            if result.returncode == 2:
+                print(json.dumps({
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": result.stderr.strip()
+                    or "Bootcamp write gate denied this operation.",
+                }))
+                return
+            if result.returncode:
+                raise RuntimeError(result.stderr.strip() or f"write-gate helper exited {result.returncode}")
+
+
+def _transcript_message(path: Path) -> str | None:
+    records = []
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(event, dict):
+                records.append(event)
+    last_user = max(
+        (index for index, event in enumerate(records) if event.get("type") == "user.message"),
+        default=-1,
+    )
+    assistant_events = [
+        event for event in records[last_user + 1:] if event.get("type") == "assistant.message"
+    ]
+    if not assistant_events:
+        return None
+    data = assistant_events[-1].get("data")
+    content = data.get("content") if isinstance(data, dict) else None
+    if isinstance(content, str):
+        return content or None
+    if isinstance(content, list):
+        blocks = [block for block in content if isinstance(block, dict)]
+        if blocks and blocks[-1].get("type") == "tool_use":
+            return None
+        text = "\n".join(
+            block["text"] for block in blocks
+            if block.get("type") == "text" and isinstance(block.get("text"), str)
+        )
+        return text or None
+    return None
+
+
+def _has_clean_closing_question(message: str) -> bool:
+    lines = message.rstrip().splitlines()
+    if sum(line.count("👉") for line in lines) != 1:
+        return False
+    question_line = next(index for index, line in enumerate(lines) if "👉" in line)
+    trailing = lines[question_line + 1:]
+    nonempty = [line for line in trailing if line.strip()]
+    if not nonempty:
+        return True
+    if not re.match(r"^\s*(?:>\s*)?\d+\.\s+", nonempty[0]):
+        return False
+    return all(
+        not line.strip()
+        or re.match(r"^\s*(?:>\s*)?\d+\.\s+", line)
+        or line.startswith(("  ", "\t", ">"))
+        for line in trailing
+    )
 
 
 def agent_stop() -> None:
@@ -98,18 +216,29 @@ def agent_stop() -> None:
         return
     last_message = payload.get("last_assistant_message") or payload.get("lastAssistantMessage")
     if not isinstance(last_message, str):
-        raise ValueError(
-            "agentStop did not provide last_assistant_message; verify the active Copilot harness payload"
-        )
-    if not last_message.strip() or "👉" in last_message:
+        transcript = payload.get("transcriptPath") or payload.get("transcript_path")
+        if not isinstance(transcript, str) or not transcript:
+            raise ValueError("agentStop did not provide a transcript path")
+        deadline = time.monotonic() + 1
+        while True:
+            last_message = _transcript_message(Path(transcript))
+            if last_message is not None:
+                break
+            if time.monotonic() >= deadline:
+                raise ValueError("agentStop transcript contained no settled assistant message")
+            time.sleep(0.05)
+    if not isinstance(last_message, str):
+        raise ValueError("agentStop transcript contained no assistant message")
+    if not last_message.strip() or _has_clean_closing_question(last_message):
         return
     print(json.dumps({
         "decision": "block",
         "reason": (
-            "A bootcamp is active. Review your last message. If it already ends with a single "
-            "👉 closing question, do not repeat it. Otherwise, only when you have finished a "
-            "bootcamp step and are yielding, add exactly one closing question. Add nothing "
-            "mid-step or after bootcamp completion."
+            "A bootcamp is active. Review your last message. It must end with exactly one 👉 "
+            "closing question, followed only by its numbered answer options if any. Remove any "
+            "post-question narration; do not repeat the question. If no question is pending, only "
+            "when you have finished a bootcamp step and are yielding, add its prescribed question. "
+            "Add nothing mid-step or after bootcamp completion."
         ),
     }, ensure_ascii=False))
 

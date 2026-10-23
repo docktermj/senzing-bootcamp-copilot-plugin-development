@@ -21,7 +21,7 @@ Every status this module reports goes to **stderr**, never stdout: two of its ca
 are hooks whose stdout is a structured channel (``userPromptSubmitted`` returns JSON), so
 a status line on stdout would corrupt the payload.
 
-This is NOT a hook itself. It is imported by the pre-compaction (no Copilot hook is documented), sessionEnd, sessionStart
+This is NOT a hook itself. It is imported by the pre-compaction (no Copilot preCompact handler is configured), sessionEnd, sessionStart
 and userPromptSubmitted hook scripts, which run as ``python3 "<hook>.py"``;
 Python puts each hook script's own directory (this ``scripts/`` directory) on
 ``sys.path``, so ``import recap_checkpoint`` resolves here on Linux, macOS, and
@@ -114,7 +114,7 @@ def _read(path):
 
     Never raises. ``UnicodeDecodeError`` derives from ``ValueError``, not ``OSError``, so
     it escaped the original handler and crashed every hook that folds the recap — the
-    pre-compaction (no Copilot hook is documented) durability hook among them, which fails precisely when the recap is about
+    pre-compaction (no Copilot preCompact handler is configured) durability hook among them, which fails precisely when the recap is about
     to be needed. ``current_module()`` above already catches ``(OSError, ValueError)`` for
     this reason (INV-048); this function is the other half of that rule.
     """
@@ -160,7 +160,7 @@ def _scaffold_text(module=None):
             "     the START and END markers below.",
             "",
             "     This is what survives a quit, compaction, or new session mid-module: the",
-            "     pre-compaction (no Copilot hook is documented), sessionEnd and sessionStart hooks fold it into",
+            "     pre-compaction (no Copilot preCompact handler is configured), sessionEnd and sessionStart hooks fold it into",
             "     docs/bootcamp_recap.md. While it holds only this scaffold there is nothing",
             "     to fold, and each of those hooks will say so on stderr.",
             "",

@@ -114,3 +114,7 @@ Phase 2 closes; when it is not selected, the next module is Data collection. It 
 of System Verification (INV-086/INV-087).
 
 Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase.
+
+For this Copilot host, also follow
+[`copilot-turn-protocol.md`](copilot-turn-protocol.md) for the complete module start,
+same-turn Senzing grounding, exact question ending, and stakeholder-summary timing.

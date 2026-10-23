@@ -380,8 +380,8 @@ and the hardware/software it ran on. Add these header meta lines (in the preambl
 - `**Plugin version:**` — from the plugin manifest (should already be present from the recap
   header; add it here if the header predates that field). Resolve the manifest exactly as
   `../bootcamp-onboarding/onboarding-flow.md` step 0 specifies —
-  `${PLUGIN_ROOT}/.copilot-plugin/plugin.json`, else
-  `<this-skill-dir>/../../.copilot-plugin/plugin.json`, else "Unknown" — and ⛔ never by searching
+  `${PLUGIN_ROOT}/plugin.json`, else
+  `<this-skill-dir>/../../plugin.json`, else "Unknown" — and ⛔ never by searching
   the filesystem, which on a machine carrying two plugin checkouts records the wrong version in
   the keepsake (INV-252). Record the version only, never the path it resolved from: an absolute
   path carries a username and this block is PII-free (INV-322).

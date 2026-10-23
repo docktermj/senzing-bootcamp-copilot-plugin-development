@@ -8,21 +8,24 @@ weaker.
   portable Agent Skills; they are loaded from the plugin's `skills/` directory.
 - Treat natural-language interactions as authoritative. Do not depend on parent-host slash
   command names or transcript formats.
-- The Copilot `agentStop` hook may request a continuation when an active bootcamp turn does not
-  end with its required closing question. The hook is a safety net, not a replacement for the
-  question-by-question skill instructions. Confirm its event payload in the target client before
-  relying on it.
+- The Copilot `Stop` hook may request a continuation when an active bootcamp turn does not end
+  with its required closing question. It uses the documented VS Code-compatible payload to read
+  the assistant message. The hook is a safety net, not a replacement for question-by-question
+  skill instructions.
 - `preToolUse` invokes the inherited write gate and converts its explicit denial to Copilot's
-  `permissionDecision: deny` response. A host test must confirm tool names, file-path payloads,
-  and denial behavior.
+  `permissionDecision: deny` response. The CLI payload's `toolCalls` and `apply_patch` targets are
+  normalized before the write gate runs; tests must confirm both in-project allowance and
+  out-of-project denial.
 - `sessionStart`, `userPromptSubmitted`, and `sessionEnd` invoke the inherited lifecycle helpers
   through the Copilot adapter. The adapter returns only Copilot hook output fields and reports
   helper failures on stderr with a nonzero exit.
-- There is no documented Copilot `preCompact` event. Keep the recap checkpoint current at the
-  skill-defined step boundaries; compaction recovery is advisory rather than an automatic host
-  guarantee.
-- Model selection and effort are client/account dependent. Describe capabilities and task goals;
-  do not request a model by a fixed identifier.
+- Copilot CLI documents a `preCompact` event, but this plugin does not configure a handler in
+  this build. Keep the recap checkpoint current at each skill-defined step boundary; manual
+  guidance remains the fallback when compaction happens.
+- Model selection and effort are client/account dependent. Follow the curriculum's
+  interface-specific guidance: use its documented `/model` and `/effort` commands only in
+  Copilot CLI; in other clients, describe the recommendation and direct the bootcamper to that
+  interface's controls. Do not assume a model identifier or command is portable across clients.
 - The live Senzing MCP server remains mandatory for Senzing facts. A plugin's MCP configuration
   does not count as evidence that the server is reachable; check it during the dry run.
 

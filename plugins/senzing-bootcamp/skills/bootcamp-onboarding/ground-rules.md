@@ -754,7 +754,7 @@ which interface. The bootcamp runs in more than one, and the names are not inter
   `docs/progress/recap_checkpoint.md`, refreshed at each step boundary with the module's
   accumulating Information Shared / Questions & Responses / Actions Taken / End-of-Module Summary-so-far, wrapped
   in `<!-- RECAP-CHECKPOINT:START -->` … `<!-- RECAP-CHECKPOINT:END -->` markers. This is what
-  survives a quit, compaction, or new session mid-module: the plugin's `pre-compaction (no Copilot hook is documented)`, `sessionEnd`,
+  survives a quit, compaction, or new session mid-module: the plugin's `pre-compaction (no Copilot preCompact handler is configured)`, `sessionEnd`,
   and `sessionStart` hooks fold it into `docs/bootcamp_recap.md` (append-only, idempotent). It is a
   single small file updated at step boundaries (INV-012), not per sub-step, and it is finalized and
   cleared on module completion (see `module-completion.md`).

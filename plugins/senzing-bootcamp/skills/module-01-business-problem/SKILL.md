@@ -50,3 +50,7 @@ now asked in **Phase 2 as Step 10a** (after the scenario is identified, before t
 is written), per INV-097; Phase 1 ends at step 6 and Phase 2's numbering starts at 9.)
 
 Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase.
+
+For this Copilot host, also follow
+[`copilot-turn-protocol.md`](copilot-turn-protocol.md) for the complete module start,
+same-turn Senzing grounding, exact question ending, and stakeholder-summary timing.

@@ -356,7 +356,12 @@ different route, and on this path this branch is the only thing standing in fron
 
 ## 16. Generate the stakeholder summary
 
-Always produce `docs/stakeholder_summary_module1.md` — no gate, no 👉 question. It covers problem,
+Always produce `docs/stakeholder_summary_module1.md` — no gate, no 👉 question.
+
+⛔ Do not create or update this file before the bootcamper confirms Step 15; create it
+exactly once during Step 16.
+
+It covers problem,
 approach, data sources, key findings, next steps, and ROI considerations, filled with Module 1
 context from `docs/business_problem.md`. (The Kiro `templates/stakeholder_summary.md` port is a
 later phase; compose the summary directly for now.) Do not ask whether to create it; announce it

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""pre-compaction (no Copilot hook is documented) hook: to preserve your in-progress recap before the conversation is compacted.
+"""pre-compaction (no Copilot preCompact handler is configured) hook: to preserve your in-progress recap before the conversation is compacted.
 
 Compaction summarizes the conversation, which can drop an in-progress module's recap
 narrative even though the session continues. When a bootcamp is active this hook:

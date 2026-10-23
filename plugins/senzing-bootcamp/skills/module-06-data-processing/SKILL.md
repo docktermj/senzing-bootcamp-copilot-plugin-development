@@ -82,3 +82,7 @@ When the bootcamper hits an error during this module:
 - **Phase D, Validation** (steps 21–28): `phaseD-validation.md`
 
 Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase.
+
+For this Copilot host, also follow
+[`copilot-turn-protocol.md`](copilot-turn-protocol.md) for the complete module start,
+same-turn Senzing grounding, exact question ending, and stakeholder-summary timing.

@@ -23,7 +23,7 @@ and evidence for each critical behavior.
 | TC-06 | Yes | Confirm `preToolUse` allows an in-project write and denies an out-of-project or obvious-secret write. |
 | TC-07 | Yes | Confirm `agentStop` allows a closing question and requests one continuation when it is missing. |
 | TC-08 | Yes | Confirm `sessionEnd` performs its intended cleanup. |
-| TC-09 | Yes | Observe compaction behavior; verify the checkpoint fallback and record that automatic `preCompact` is unavailable. |
+| TC-09 | Yes | If a `preCompact` handler is configured, exercise it; otherwise record that automatic handling is not wired and verify the checkpoint fallback. |
 | TC-10 | Yes | Walk one representative module end-to-end and verify one question per yielding turn against live Senzing MCP. |
 
 ## Release record requirements

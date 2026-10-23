@@ -30,7 +30,6 @@ def plugin_version():
     """
     manifest = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        ".copilot-plugin",
         "plugin.json",
     )
     try:

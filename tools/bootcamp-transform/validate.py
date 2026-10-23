@@ -133,8 +133,15 @@ def check() -> None:
         errors.append("plugin manifest version differs from RELEASE_VERSION")
 
     mcp = read_json(PLUGIN / "mcp.json", "plugin MCP configuration")
-    if not isinstance(mcp.get("mcpServers"), dict) or "senzing" not in mcp["mcpServers"]:
+    if mcp.get("$schema") != "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json":
+        errors.append("plugin mcp.json does not declare the Agent Plugins 1.0 MCP schema")
+    servers = mcp.get("mcpServers")
+    if not isinstance(servers, dict) or "senzing" not in servers:
         errors.append("plugin mcp.json must define the Senzing server")
+    else:
+        senzing_server = servers["senzing"]
+        if not isinstance(senzing_server, dict) or senzing_server.get("type") != "streamable-http":
+            errors.append("plugin Senzing MCP server must use the streamable-http transport")
 
     hook_file = PLUGIN / "com.github.copilot/hooks/hooks.json"
     hooks_document = read_json(hook_file, "Copilot hooks")
@@ -142,7 +149,7 @@ def check() -> None:
     if hooks_document.get("version") != 1 or not isinstance(hooks, dict):
         errors.append("Copilot hooks must use version 1 and an event map")
         hooks = {}
-    supported = {"sessionStart", "sessionEnd", "userPromptSubmitted", "preToolUse", "agentStop"}
+    supported = {"sessionStart", "sessionEnd", "userPromptSubmitted", "preToolUse", "Stop"}
     if set(hooks) - supported:
         errors.append(f"unsupported Copilot hook events: {sorted(set(hooks) - supported)}")
     for event, entries in hooks.items():
@@ -153,9 +160,14 @@ def check() -> None:
             if not isinstance(entry, dict):
                 errors.append(f"{event} handler must be an object")
                 continue
-            command = entry.get("command", "")
-            if entry.get("type") != "command" or "${PLUGIN_ROOT}" not in command:
-                errors.append(f"{event} handler must be a command rooted at PLUGIN_ROOT")
+            command = entry.get("command")
+            if (
+                entry.get("type") != "command"
+                or not isinstance(command, str)
+                or "${PLUGIN_ROOT}" not in command
+                or entry.get("cwd") != "."
+            ):
+                errors.append(f"{event} handler must be rooted at PLUGIN_ROOT and run from the project root")
                 continue
             script = re.search(r'\$\{PLUGIN_ROOT\}/([^"\s]+)', command)
             if not script or not (PLUGIN / script.group(1)).is_file():

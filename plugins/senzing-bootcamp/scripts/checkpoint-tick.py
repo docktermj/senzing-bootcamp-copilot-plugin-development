@@ -10,7 +10,7 @@ onboarding — by which time the sessionStart hook has already run and found no
 bootcamp. Only a per-turn hook creates the file within one turn of the bootcamp
 starting. The cost is one `os.path.exists` on turns where it already exists.
 
-Why the reminder cannot live only in the pre-compaction (no Copilot hook is documented) hook. That hook cannot fire until
+Why the reminder cannot live only in the pre-compaction (no Copilot preCompact handler is configured) hook. That hook cannot fire until
 a compaction is already under way, which is after the window in which the checkpoint
 had to have been written for there to be anything to preserve. A full bootcamp ran ten
 modules without the file existing, in a session that had crossed a compaction
@@ -53,7 +53,7 @@ if created:
                 "/ End-of-Module Summary-so-far between its "
                 "<!-- RECAP-CHECKPOINT:START --> and <!-- RECAP-CHECKPOINT:END --> "
                 "markers. This is the only copy that survives a quit, compaction, or new "
-                "session mid-module; the pre-compaction (no Copilot hook is documented), sessionEnd and sessionStart hooks "
+                "session mid-module; the pre-compaction (no Copilot preCompact handler is configured), sessionEnd and sessionStart hooks "
                 "fold whatever is in it into docs/bootcamp_recap.md, and fold nothing "
                 "while it holds only its scaffold. Finalize and clear it on module "
                 "completion (module-completion.md step 2d). Do not mention this file to "

@@ -112,11 +112,15 @@
     {"old": "Claude Code", "new": "GitHub Copilot"},
     {"old": "Claude's", "new": "GitHub Copilot's"},
     {"old": "Claude", "new": "GitHub Copilot"},
+    {"old": "\".claude-plugin\",\n        \"plugin.json\",", "new": "\"plugin.json\","},
+    {"old": "for candidate in (here.parent / \"plugin.json\", here.parent / \".claude-plugin\" / \"plugin.json\"):",
+     "new": "for candidate in (here.parent / \"plugin.json\",):"},
+    {"old": ".claude-plugin/plugin.json", "new": "plugin.json"},
+    {"old": ".claude-plugin", "new": "plugin.json"},
     {"old": "claude", "new": "copilot"},
     {"old": "${CLAUDE_PLUGIN_ROOT}", "new": "${PLUGIN_ROOT}"},
     {"old": "CLAUDE_PLUGIN_ROOT", "new": "PLUGIN_ROOT"},
     {"old": "$CLAUDE_EFFORT", "new": "no portable effort setting"},
-    {"old": ".claude-plugin", "new": "plugin.json"},
     {"old": ".claude", "new": ".github"},
     {"old": "/start-bootcamp", "new": "the bootcamp-onboarding skill"},
     {"old": "/graduate", "new": "the graduation skill"},
@@ -127,8 +131,19 @@
     {"old": "SessionStart", "new": "sessionStart"},
     {"old": "SessionEnd", "new": "sessionEnd"},
     {"old": "PreToolUse", "new": "preToolUse"},
-    {"old": "PreCompact", "new": "pre-compaction (no Copilot hook is documented)"},
-    {"old": "Stop hook", "new": "agentStop hook"}
+    {"old": "PreCompact", "new": "pre-compaction (no Copilot preCompact handler is configured)"},
+    {"old": "Stop hook", "new": "agentStop hook"},
+    {"old": "\"mcpServers\": {",
+     "new": "\"$schema\": \"https://agent-plugins.org/schemas/1.0.0/mcp.schema.json\",\n  \"mcpServers\": {"},
+    {"old": "\"type\": \"http\"", "new": "\"type\": \"streamable-http\""},
+    {
+      "old": "Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase.",
+      "new": "Read `current_step` from `config/bootcamp_progress.json` and resume at the right phase.\n\nFor this Copilot host, also follow\n[`copilot-turn-protocol.md`](copilot-turn-protocol.md) for the complete module start,\nsame-turn Senzing grounding, exact question ending, and stakeholder-summary timing."
+    },
+    {
+      "old": "Always produce `docs/stakeholder_summary_module1.md` — no gate, no 👉 question. It covers problem,",
+      "new": "Always produce `docs/stakeholder_summary_module1.md` — no gate, no 👉 question.\n\n⛔ Do not create or update this file before the bootcamper confirms Step 15; create it\nexactly once during Step 16.\n\nIt covers problem,"
+    }
   ],
   "generated_artifacts": [
     {
@@ -152,19 +167,19 @@
         "version": 1,
         "hooks": {
           "sessionStart": [
-            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-start"}
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-start", "cwd": "."}
           ],
           "userPromptSubmitted": [
-            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" user-prompt"}
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" user-prompt", "cwd": "."}
           ],
           "preToolUse": [
-            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" pre-tool"}
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" pre-tool", "cwd": "."}
           ],
-          "agentStop": [
-            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" agent-stop"}
+          "Stop": [
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" agent-stop", "cwd": "."}
           ],
           "sessionEnd": [
-            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-end"}
+            {"type": "command", "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-end", "cwd": "."}
           ]
         }
       }
@@ -175,6 +190,7 @@
     },
     {"path": "LICENSE", "source": "LICENSE"},
     {"path": "docs/copilot-host-mechanisms.md", "source": "docs/copilot-host-mechanisms.md"},
-    {"path": "docs/copilot-interaction-contract.md", "source": "docs/copilot-interaction-contract.md"}
+    {"path": "docs/copilot-interaction-contract.md", "source": "docs/copilot-interaction-contract.md"},
+    {"path": "skills/module-01-business-problem/copilot-turn-protocol.md", "source": "docs/module-01-copilot-turn-protocol.md"}
   ]
 }

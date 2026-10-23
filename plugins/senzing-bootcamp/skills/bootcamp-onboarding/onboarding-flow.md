@@ -30,13 +30,13 @@ Tell the bootcamper, in your own words:
 "I'm going to do some quick administrative setup: creating your project directory and checking
 your environment."
 
-Read the plugin version from the plugin manifest (`.copilot-plugin/plugin.json`, the `version`
+Read the plugin version from the plugin manifest (`plugin.json`, the `version`
 field) and hold it to display with the WELCOME banner (step 3) and to record in the recap.
 **Resolve the manifest in this order and stop at the first that reads (INV-252):**
 
-1. `${PLUGIN_ROOT}/.copilot-plugin/plugin.json`, when `PLUGIN_ROOT` is set **and
+1. `${PLUGIN_ROOT}/plugin.json`, when `PLUGIN_ROOT` is set **and
    non-empty**.
-2. `<this-skill-dir>/../../.copilot-plugin/plugin.json` — this skill's own directory, two levels
+2. `<this-skill-dir>/../../plugin.json` — this skill's own directory, two levels
    up. The harness supplies that directory at invocation, so by construction it belongs to the
    plugin whose files are running. This is the same skill-relative fallback INV-185 documents for
    bundled scripts.

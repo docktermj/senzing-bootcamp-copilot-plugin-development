@@ -4,31 +4,36 @@
     "sessionStart": [
       {
         "type": "command",
-        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-start"
+        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-start",
+        "cwd": "."
       }
     ],
     "userPromptSubmitted": [
       {
         "type": "command",
-        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" user-prompt"
+        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" user-prompt",
+        "cwd": "."
       }
     ],
     "preToolUse": [
       {
         "type": "command",
-        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" pre-tool"
+        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" pre-tool",
+        "cwd": "."
       }
     ],
-    "agentStop": [
+    "Stop": [
       {
         "type": "command",
-        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" agent-stop"
+        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" agent-stop",
+        "cwd": "."
       }
     ],
     "sessionEnd": [
       {
         "type": "command",
-        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-end"
+        "command": "python3 \"${PLUGIN_ROOT}/scripts/copilot-hooks.py\" session-end",
+        "cwd": "."
       }
     ]
   }

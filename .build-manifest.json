@@ -9,16 +9,16 @@
       "output": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
     },
     "com.github.copilot/hooks/hooks.json": {
-      "generated": "2703d27a13155b8c077349a84736afb4725ddd2a4c60848bc829632f8ee2989c",
-      "output": "2703d27a13155b8c077349a84736afb4725ddd2a4c60848bc829632f8ee2989c"
+      "generated": "65a55b538a4fbf37f9c6147b8d806328656f9e36fa51c1fd96fc029b517871c4",
+      "output": "65a55b538a4fbf37f9c6147b8d806328656f9e36fa51c1fd96fc029b517871c4"
     },
     "docs/copilot-host-mechanisms.md": {
-      "generated": "aeae94fc477ff65547bf07951d1e4590019a036b310171b598621c60c4be27dc",
-      "output": "aeae94fc477ff65547bf07951d1e4590019a036b310171b598621c60c4be27dc"
+      "generated": "771f462c762831346a7198033e5cfbd9bfab0717e380c7b9e1acd76a2ca1f114",
+      "output": "771f462c762831346a7198033e5cfbd9bfab0717e380c7b9e1acd76a2ca1f114"
     },
     "docs/copilot-interaction-contract.md": {
-      "generated": "c7e0f62dd2f2189b9016662b2e915253c46cf296158fe6a59e6313cbb440b422",
-      "output": "c7e0f62dd2f2189b9016662b2e915253c46cf296158fe6a59e6313cbb440b422"
+      "generated": "7408988ed762163df2b7908aa393aa58d0072c9e06de05d598b383f9de04b7ec",
+      "output": "7408988ed762163df2b7908aa393aa58d0072c9e06de05d598b383f9de04b7ec"
     },
     "docs/examples/bootcamp_recap.example.md": {
       "generated": "713e21a24f20f0d2aed418df54755304df4d6d3e7ca00f83454fde79beae5de0",
@@ -89,8 +89,8 @@
       "output": "585d59e41af040b2782a9e618ce9e361932f8207845deea164da86ecb038dde1"
     },
     "mcp.json": {
-      "generated": "05f6b5112f9fcf29cc72f52dd60cbde565220dcba82352726f79337dd6c4972a",
-      "output": "05f6b5112f9fcf29cc72f52dd60cbde565220dcba82352726f79337dd6c4972a"
+      "generated": "05acddfd9b1d6aaebc61fe83275d100eb0ae1151bacf2c118a0025fa1b41c517",
+      "output": "05acddfd9b1d6aaebc61fe83275d100eb0ae1151bacf2c118a0025fa1b41c517"
     },
     "plugin.json": {
       "generated": "9bd6ac0cc2324c9a8f32f6916967d0ac583ff3c239f54f1b82042ab13677747b",
@@ -105,20 +105,20 @@
       "output": "5e195bb13eae90a94e43e4d629b9d61cbfa1084dabdedc2e0b3d2a07e52a0aec"
     },
     "scripts/checkpoint-tick.py": {
-      "generated": "8d5b5d79c48ff9aa5d7e8d2c7f17907aad54f010cfc04ece5293fae0cd2793c8",
-      "output": "8d5b5d79c48ff9aa5d7e8d2c7f17907aad54f010cfc04ece5293fae0cd2793c8"
+      "generated": "990eb63c93aaa98af32948c89417948376c613c85852f70423c0656ba87773c7",
+      "output": "990eb63c93aaa98af32948c89417948376c613c85852f70423c0656ba87773c7"
     },
     "scripts/copilot-hooks.py": {
-      "generated": "368df1099da94710ccb505ff51f2cb03c927ad60c633ec9a3f6ea1b196f6bb55",
-      "output": "368df1099da94710ccb505ff51f2cb03c927ad60c633ec9a3f6ea1b196f6bb55"
+      "generated": "7dc841f9af3c5bbb44bcd09ec5384d6125fe875b7226f8294d9ecf821d2b2715",
+      "output": "7dc841f9af3c5bbb44bcd09ec5384d6125fe875b7226f8294d9ecf821d2b2715"
     },
     "scripts/docker_lifecycle.py": {
       "generated": "f59f3f81e6738e5aab5e4002ab7478515207b3699775ffcba8d87d88d49f73a9",
       "output": "f59f3f81e6738e5aab5e4002ab7478515207b3699775ffcba8d87d88d49f73a9"
     },
     "scripts/feedback-capture.py": {
-      "generated": "bf19e5d122c192028a16e837699e908c38f87cfaf985757404ceb90d4e15a096",
-      "output": "bf19e5d122c192028a16e837699e908c38f87cfaf985757404ceb90d4e15a096"
+      "generated": "fd8778c689daa561c1a5c5d36eca9e90a82c0c39c38d8d36d428fb547c477436",
+      "output": "fd8778c689daa561c1a5c5d36eca9e90a82c0c39c38d8d36d428fb547c477436"
     },
     "scripts/generate_discoveries_pdf.py": {
       "generated": "3347a6d2759c6b4fc7595d98ef48f637d5a72fd7ed2944ec4bc0f9960a8c37c3",
@@ -141,16 +141,16 @@
       "output": "270fe1b5e8ea3743ae2088cfac24f64565fe4ee8197af373eafd1b3135ef0b87"
     },
     "scripts/package_bootcamp.py": {
-      "generated": "b37a3b35309e09c2725d73b0be0f24fc238256db1f31500d24b5ced3cc352987",
-      "output": "b37a3b35309e09c2725d73b0be0f24fc238256db1f31500d24b5ced3cc352987"
+      "generated": "b66bf5c67722445b3f52222aa3b7101a5ae90f601fa4f73d1f5eaa2bfdf05d9a",
+      "output": "b66bf5c67722445b3f52222aa3b7101a5ae90f601fa4f73d1f5eaa2bfdf05d9a"
     },
     "scripts/precompact-recap.py": {
-      "generated": "bdeb7d03312010ca234b0d0bafa64749a33d9111bde4e74717e293fe2347ba55",
-      "output": "bdeb7d03312010ca234b0d0bafa64749a33d9111bde4e74717e293fe2347ba55"
+      "generated": "24fddcf889ca2dac41c31ab8e9a8389106dbe0c151ac956e382edbb794ee9203",
+      "output": "24fddcf889ca2dac41c31ab8e9a8389106dbe0c151ac956e382edbb794ee9203"
     },
     "scripts/recap_checkpoint.py": {
-      "generated": "e65615b5c3d970cc4997ca19ea0497cacbed0e0590f099360f9709fc1285e99f",
-      "output": "e65615b5c3d970cc4997ca19ea0497cacbed0e0590f099360f9709fc1285e99f"
+      "generated": "6b889eb84fa901624c1de846492974efdb6aeccca8405584ef32ec1e3c2638ad",
+      "output": "6b889eb84fa901624c1de846492974efdb6aeccca8405584ef32ec1e3c2638ad"
     },
     "scripts/secret_patterns.py": {
       "generated": "b733ccb008eccbd3f541d0fcaf9c6764f3ce6a84c79ce5f0bb69345ed9ce5dfa",
@@ -189,12 +189,12 @@
       "output": "07b60aefcb3f9862155067100b8f713296418b66948f0265f4a609571e8a87a7"
     },
     "skills/bootcamp-onboarding/feedback.md": {
-      "generated": "2925d9b190f83a30f180b967d1a4b826aeb7a1025a23189ac34c183817c14823",
-      "output": "2925d9b190f83a30f180b967d1a4b826aeb7a1025a23189ac34c183817c14823"
+      "generated": "502b8573054c0392acd6cff0ddeb88f6a693fd14c816dc7f65b3f503da92744d",
+      "output": "502b8573054c0392acd6cff0ddeb88f6a693fd14c816dc7f65b3f503da92744d"
     },
     "skills/bootcamp-onboarding/ground-rules.md": {
-      "generated": "7f0013ec8ef659abbf9261024e66b78b0762b90f52dbdbad40609545cab9f295",
-      "output": "7f0013ec8ef659abbf9261024e66b78b0762b90f52dbdbad40609545cab9f295"
+      "generated": "c26525451c759d19bcdda06e5c63343e39571ea6a0dff52b7410c6a749be50a6",
+      "output": "c26525451c759d19bcdda06e5c63343e39571ea6a0dff52b7410c6a749be50a6"
     },
     "skills/bootcamp-onboarding/module-completion.md": {
       "generated": "6a28d0da0b62e517136e481bde803869830dc7a8dcf13a57f7bd5fc6b581741b",
@@ -205,8 +205,8 @@
       "output": "dbf6eacd61d591b70159772db53a48b5969c05c941e2d7631d9fdaa256d5c9e4"
     },
     "skills/bootcamp-onboarding/onboarding-flow.md": {
-      "generated": "abced82ed08fe3a22de2b1813821039563b7e64d0b26417f9f90428fd2c8b557",
-      "output": "abced82ed08fe3a22de2b1813821039563b7e64d0b26417f9f90428fd2c8b557"
+      "generated": "94797bc634af2494ff3e561d75df16cd1e0e4c032241d15bfcc44b994124923d",
+      "output": "94797bc634af2494ff3e561d75df16cd1e0e4c032241d15bfcc44b994124923d"
     },
     "skills/bootcamp-onboarding/packaging.md": {
       "generated": "83eca3287d12227b400968e2e262b477714eb280625ffbe504b4671d706cdb42",
@@ -217,8 +217,8 @@
       "output": "3b2f9549f963f4f96644ac38cfb27fcf76dfe3d2d982b4106fae0a3b1cb71723"
     },
     "skills/graduation/SKILL.md": {
-      "generated": "450d6f83a470df725d202e526caa111e9e7c1e14dba15f4dcb2422dbb063c12d",
-      "output": "450d6f83a470df725d202e526caa111e9e7c1e14dba15f4dcb2422dbb063c12d"
+      "generated": "8c2321084edf770dea068f171687471ee89f39f246622be9beff5687d02afd91",
+      "output": "8c2321084edf770dea068f171687471ee89f39f246622be9beff5687d02afd91"
     },
     "skills/graduation/database-backup.md": {
       "generated": "48a562fb3bccfc1d8e71d5b5795ab653248be9a6e803b436b0ec9369f4e1566c",
@@ -233,24 +233,28 @@
       "output": "a8ccb7148dcbdc96177913fa20760aa3e570a749e59923535faec748388a33b4"
     },
     "skills/module-01-business-problem/SKILL.md": {
-      "generated": "fd1232aac54a98cca61c684df37839bd211c2275b0c8a59a683fcb94e63a3158",
-      "output": "fd1232aac54a98cca61c684df37839bd211c2275b0c8a59a683fcb94e63a3158"
+      "generated": "57dfec7e0caf9dfcceaf7249154fa628f2d31837faec6cf2b1380345f80911ac",
+      "output": "57dfec7e0caf9dfcceaf7249154fa628f2d31837faec6cf2b1380345f80911ac"
+    },
+    "skills/module-01-business-problem/copilot-turn-protocol.md": {
+      "generated": "b9362c88aadbef2a1feb388a96515001353998937366026109e85baece586a59",
+      "output": "b9362c88aadbef2a1feb388a96515001353998937366026109e85baece586a59"
     },
     "skills/module-01-business-problem/phase1-discovery.md": {
       "generated": "92c4a4789a3929091fec9bcbde4350ef060323e0b980c77f8d8b94d8ab24a2b3",
       "output": "92c4a4789a3929091fec9bcbde4350ef060323e0b980c77f8d8b94d8ab24a2b3"
     },
     "skills/module-01-business-problem/phase2-document-confirm.md": {
-      "generated": "1cebbb52b111c6aaeca7830dba8e6982f521ff27bf811eab2fa6eb1e88b6124f",
-      "output": "1cebbb52b111c6aaeca7830dba8e6982f521ff27bf811eab2fa6eb1e88b6124f"
+      "generated": "7ee13dc0e19dfd222d951bf079d8f7f4bce5f3bf87dd999ffec456da67716b48",
+      "output": "7ee13dc0e19dfd222d951bf079d8f7f4bce5f3bf87dd999ffec456da67716b48"
     },
     "skills/module-02-sdk-setup/SKILL.md": {
       "generated": "d9429ac29dd466c81384cd83d2893f99f5a7e561cd135914680505ade3adc3db",
       "output": "d9429ac29dd466c81384cd83d2893f99f5a7e561cd135914680505ade3adc3db"
     },
     "skills/module-03-system-verification/SKILL.md": {
-      "generated": "cc75c445d17af3fd76ae0172b20ae9131d7d8e167066faed76bb33ffc5f2713f",
-      "output": "cc75c445d17af3fd76ae0172b20ae9131d7d8e167066faed76bb33ffc5f2713f"
+      "generated": "39d1307d719ec80fab5c906fdd1403eaf9da1e727fac5cdd111e8aeed5af96c8",
+      "output": "39d1307d719ec80fab5c906fdd1403eaf9da1e727fac5cdd111e8aeed5af96c8"
     },
     "skills/module-03-system-verification/phase1-verification.md": {
       "generated": "2aaed1747d7b7267077723fce1991e95bfd0df40935ccf5a131c13106a99ec6e",
@@ -261,8 +265,8 @@
       "output": "7afb2191a98b168f09b4a592e8ae9fc39a2420ea28f15a87a9515c5fdfc70637"
     },
     "skills/module-03b-truthset-visualization/SKILL.md": {
-      "generated": "d4e5172ffa480328d6883be9523e32117a35d43636c1158dccb994d04692ec4f",
-      "output": "d4e5172ffa480328d6883be9523e32117a35d43636c1158dccb994d04692ec4f"
+      "generated": "e6bf099a4a11b13653fb9db300bd0df870781cc4e5f9bf12e20a1b601c8991f1",
+      "output": "e6bf099a4a11b13653fb9db300bd0df870781cc4e5f9bf12e20a1b601c8991f1"
     },
     "skills/module-03b-truthset-visualization/phase1-visualization.md": {
       "generated": "68348f7d02fb4584f19895c969523d36e422b9cb31d054c7cd0c684b167b91ac",
@@ -281,8 +285,8 @@
       "output": "761d18c2bca6aeb4cf6e9aea87a8439d6dade8ab72663e39451f38f2fc3ed802"
     },
     "skills/module-05-data-quality-mapping/SKILL.md": {
-      "generated": "23844cb6f42906dd96e5d85f5524631e3b19506337020a8e9d965830f29039bf",
-      "output": "23844cb6f42906dd96e5d85f5524631e3b19506337020a8e9d965830f29039bf"
+      "generated": "6f799074f3ce8e1a01e2ab0f5c57abee1ef7b03ea16b6ce78b314e5972664bda",
+      "output": "6f799074f3ce8e1a01e2ab0f5c57abee1ef7b03ea16b6ce78b314e5972664bda"
     },
     "skills/module-05-data-quality-mapping/phase1-quality-assessment.md": {
       "generated": "d10ea4e029beb62a18fe8f7672563f4a71c5c1993072cfc049007dde8e1a5473",
@@ -297,8 +301,8 @@
       "output": "24b7e14f11c9094f4806968a4d4708fb886ebc52b21c7e64a7e5ffc826e9c24e"
     },
     "skills/module-06-data-processing/SKILL.md": {
-      "generated": "d970606fe4f5aa9fef063699c784c2dd1814974b7f6efcc05cb4b8a78457df2a",
-      "output": "d970606fe4f5aa9fef063699c784c2dd1814974b7f6efcc05cb4b8a78457df2a"
+      "generated": "0e63215176f0014bed089151569452ce269fb287dd169318d1186c35da8cfd2e",
+      "output": "0e63215176f0014bed089151569452ce269fb287dd169318d1186c35da8cfd2e"
     },
     "skills/module-06-data-processing/phaseA-build-loading.md": {
       "generated": "ecb52703d9fb61e74779459b40738be38b7ee07671fbb2d60fe88b548bec21d1",

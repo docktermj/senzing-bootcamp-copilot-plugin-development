@@ -289,7 +289,7 @@ def read_progress(project_root):
 def plugin_version():
     """The plugin's own version, per INV-252's skill-relative resolution."""
     here = Path(__file__).resolve().parent
-    for candidate in (here.parent / "plugin.json", here.parent / ".copilot-plugin" / "plugin.json"):
+    for candidate in (here.parent / "plugin.json",):
         try:
             with open(candidate, encoding="utf-8") as fh:
                 data = json.load(fh)
