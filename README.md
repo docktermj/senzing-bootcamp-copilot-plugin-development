@@ -5,6 +5,73 @@ into a GitHub Copilot agent plugin. The parent owns the curriculum and every `IN
 repository owns only the host adaptation. It does not fork the curriculum.
 
 The generated installable plugin is in [`plugins/senzing-bootcamp/`](plugins/senzing-bootcamp/).
+This repository also hosts its development marketplace; a separate public repository is not
+required to install from this catalog.
+
+## Install Senzing Bootcamp (preview)
+
+Anyone with repository read access and a supported GitHub Copilot client can try the plugin,
+subject to their organization/enterprise plugin policies. You need a signed-in Copilot account;
+review the plugin's hooks and requested tool permissions before trusting them.
+
+The stable marketplace name is `senzing-bootcamp-development`; the plugin identifier is
+`senzing-bootcamp@senzing-bootcamp-development`. This is a development/preview distribution,
+not a claim of Desktop runtime certification. The catalog and plugin must first be published
+on this repository's default branch for the remote instructions below to work.
+Existing [host evidence](docs/test-records/0.6.1.md) covers CLI only; installation success does
+not prove that Desktop skills, MCP, hooks, write boundaries, or progress persistence work.
+
+### GitHub Copilot Desktop app
+
+1. Open **Customize** and select the marketplace settings control beside the marketplace dropdown.
+2. Follow the prompts to add
+   `https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development`.
+3. Find **Senzing Bootcamp** in Customize and click **Install**.
+4. Open **Installed** and confirm the plugin's toggle is on. Turn it off there to disable it.
+
+These are GitHub's [documented Desktop controls](https://docs.github.com/en/copilot/how-tos/github-copilot-app/customize-github-copilot-app#adding-plugins),
+not a record of a successful Desktop test. Desktop-specific update/removal controls have not
+been verified here. Explicit update and uninstall commands are documented below for CLI;
+do not assume they manage a separate Desktop configuration. Record the actual Desktop controls
+and outcomes using the [host checklist](docs/test-checklist.md) before claiming support.
+
+### GitHub Copilot CLI
+
+```sh
+copilot plugin marketplace add docktermj/senzing-bootcamp-copilot-plugin-development
+copilot plugin marketplace browse senzing-bootcamp-development
+copilot plugin install senzing-bootcamp@senzing-bootcamp-development
+copilot plugin enable senzing-bootcamp@senzing-bootcamp-development
+copilot plugin list
+```
+
+Start a new session after changing plugin activation. In a bootcamp project, invoke
+`bootcamp-onboarding` by skill name. The installed package contains the bootcamper curriculum,
+not this checkout's maintainer operations under `.github/skills/`.
+
+To refresh the catalog and update the installed plugin:
+
+```sh
+copilot plugin marketplace update senzing-bootcamp-development
+copilot plugin update senzing-bootcamp@senzing-bootcamp-development
+```
+
+To disable it temporarily, or uninstall it and then remove the catalog:
+
+```sh
+copilot plugin disable senzing-bootcamp@senzing-bootcamp-development
+# Run these only when you want to remove the plugin and marketplace:
+copilot plugin uninstall senzing-bootcamp@senzing-bootcamp-development
+copilot plugin marketplace remove senzing-bootcamp-development
+```
+
+See the [CLI plugin reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference).
+If registration or installation fails, check repository access, authentication, default-branch
+catalog availability, and organization policy. Do not treat denied access or blocked plugins
+as a successful installation or bypass managed policy.
+
+## Rebuild and maintain
+
 The pinned parent release is recorded once in [`PARENT_VERSION`](PARENT_VERSION) and
 [`PARENT_COMMIT`](PARENT_COMMIT). Rebuild it with:
 
@@ -23,5 +90,6 @@ and the parent’s [family workflow](https://github.com/docktermj/senzing-bootca
 for the normative cross-repository rules.
 
 Maintainer operations are GitHub Copilot skills under `.github/skills/`. They are deliberately
-separate from the generated bootcamper plugin. The public Copilot plugin repository does not yet
-exist; `propagate-to-public` remains blocked until that prerequisite is created.
+separate from the generated bootcamper plugin. Distribution through this development marketplace
+does not change `propagate-to-public`: that operation remains blocked until its separate public
+repository prerequisite is created.

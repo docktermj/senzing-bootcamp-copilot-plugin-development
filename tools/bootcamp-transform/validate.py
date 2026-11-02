@@ -34,13 +34,77 @@ REQUIRED_OPERATIONS = {
 def read_json(path: Path, label: str) -> dict:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         errors.append(f"{label} is missing or invalid: {error}")
         return {}
     if not isinstance(value, dict):
         errors.append(f"{label} must contain a JSON object")
         return {}
     return value
+
+
+def check_marketplace() -> None:
+    catalog = read_json(ROOT / ".github/plugin/marketplace.json", "marketplace catalog")
+    if catalog.get("name") != "senzing-bootcamp-development":
+        errors.append("marketplace name must be senzing-bootcamp-development")
+    owner = catalog.get("owner")
+    if not isinstance(owner, dict) or not isinstance(owner.get("name"), str) or not owner["name"].strip():
+        errors.append("marketplace owner must have a nonempty string name")
+    plugins = catalog.get("plugins")
+    if not isinstance(plugins, list) or not plugins:
+        errors.append("marketplace plugins must be a nonempty array")
+        return
+    names: set[str] = set()
+    root = ROOT.resolve()
+    for index, entry in enumerate(plugins):
+        label = f"marketplace plugins[{index}]"
+        if not isinstance(entry, dict):
+            errors.append(f"{label} must be an object")
+            continue
+        name = entry.get("name")
+        if not isinstance(name, str) or not name.strip():
+            errors.append(f"{label} name must be a nonempty string")
+        elif name in names:
+            errors.append(f"{label} has duplicate plugin name: {name}")
+        else:
+            names.add(name)
+        source = entry.get("source")
+        if not isinstance(source, str) or not source.strip():
+            errors.append(f"{label} source must be a nonempty relative path")
+            continue
+        if name == "senzing-bootcamp" and source != "./plugins/senzing-bootcamp":
+            errors.append(f"{label} source must be ./plugins/senzing-bootcamp")
+        path = Path(source)
+        if path.is_absolute() or "\\" in source or re.match(r"^[A-Za-z]:", source):
+            errors.append(f"{label} source must be a repository-relative path: {source}")
+            continue
+        try:
+            resolved = (root / path).resolve()
+        except (OSError, RuntimeError, ValueError) as error:
+            errors.append(f"{label} source cannot be resolved: {error}")
+            continue
+        if not resolved.is_relative_to(root):
+            errors.append(f"{label} source escapes the repository: {source}")
+            continue
+        manifest_path = resolved / "plugin.json"
+        try:
+            if not manifest_path.resolve().is_relative_to(root):
+                errors.append(f"{label} plugin manifest escapes the repository: {source}")
+                continue
+        except (OSError, RuntimeError) as error:
+            errors.append(f"{label} plugin manifest cannot be resolved: {error}")
+            continue
+        manifest = read_json(manifest_path, f"{label} plugin manifest")
+        if manifest.get("name") != name:
+            errors.append(f"{label} name differs from plugin manifest")
+        if "version" in entry and (
+            not isinstance(entry["version"], str)
+            or not entry["version"].strip()
+            or entry["version"] != manifest.get("version")
+        ):
+            errors.append(f"{label} version differs from plugin manifest or is invalid")
+    if "senzing-bootcamp" not in names:
+        errors.append("marketplace must include senzing-bootcamp")
 
 
 def check_operation_skills() -> None:
@@ -113,6 +177,7 @@ def check_python_sources() -> None:
 
 
 def check() -> None:
+    check_marketplace()
     if not PLUGIN.is_dir():
         errors.append("generated plugin directory is missing")
         return
