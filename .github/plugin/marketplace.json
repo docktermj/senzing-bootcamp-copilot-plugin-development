@@ -1,0 +1,16 @@
+{
+  "name": "senzing-bootcamp-development",
+  "owner": {
+    "name": "docktermj"
+  },
+  "metadata": {
+    "description": "Development testing marketplace for the Senzing Bootcamp Copilot plugin."
+  },
+  "plugins": [
+    {
+      "name": "senzing-bootcamp",
+      "description": "Guided bootcamp for learning Senzing entity resolution with GitHub Copilot.",
+      "source": "./plugins/senzing-bootcamp"
+    }
+  ]
+}
