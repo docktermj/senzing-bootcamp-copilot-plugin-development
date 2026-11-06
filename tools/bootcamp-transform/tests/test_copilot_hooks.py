@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import tempfile
@@ -10,6 +11,41 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "plugins/senzing-bootcamp/scripts/copilot-hooks.py"
+
+
+def load_hook_module():
+    spec = importlib.util.spec_from_file_location("copilot_hooks_under_test", HOOK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class WriteInputTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.write_input = load_hook_module()._write_input
+
+    def test_dict_args_are_merged(self) -> None:
+        result = self.write_input({"args": {"content": "x", "mode": "w"}}, "a.md")
+        self.assertEqual(result, {"content": "x", "mode": "w", "file_path": "a.md"})
+
+    def test_json_string_args_are_parsed(self) -> None:
+        result = self.write_input({"args": json.dumps({"content": "x"})}, "a.md")
+        self.assertEqual(result, {"content": "x", "file_path": "a.md"})
+
+    def test_non_json_string_becomes_content(self) -> None:
+        patch = "*** Begin Patch\n*** Add File: a.md\n+x\n*** End Patch\n"
+        result = self.write_input({"args": patch}, "a.md")
+        self.assertEqual(result, {"content": patch, "file_path": "a.md"})
+
+    def test_missing_or_non_mapping_args_keep_only_target(self) -> None:
+        self.assertEqual(self.write_input({}, "a.md"), {"file_path": "a.md"})
+        self.assertEqual(self.write_input({"args": "[1]"}, "a.md"), {"file_path": "a.md"})
+
+    def test_target_overrides_path_keys_in_args(self) -> None:
+        result = self.write_input(
+            {"args": {"file_path": "/etc/x", "path": "/etc/y", "filePath": "/etc/z"}}, "a.md"
+        )
+        self.assertEqual(result["file_path"], "a.md")
 
 
 class CopilotHookTests(unittest.TestCase):

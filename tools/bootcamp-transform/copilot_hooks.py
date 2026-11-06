@@ -124,6 +124,18 @@ def _write_targets(call: dict[str, Any]) -> list[str]:
     return []
 
 
+def _write_input(call: dict[str, Any], target: str) -> dict[str, Any]:
+    args = call.get("args")
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except json.JSONDecodeError:
+            args = {"content": args}
+    if isinstance(args, dict):
+        return {**args, "file_path": target}
+    return {"file_path": target}
+
+
 def pre_tool() -> None:
     payload = _payload()
     for call in _tool_calls(payload):
@@ -136,7 +148,7 @@ def pre_tool() -> None:
         for target in targets:
             result = _run("write-gate.py", {
                 "tool_name": name,
-                "tool_input": {"file_path": target},
+                "tool_input": _write_input(call, target),
             })
             if result.returncode == 2:
                 print(json.dumps({
