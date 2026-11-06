@@ -93,3 +93,25 @@ Maintainer operations are GitHub Copilot skills under `.github/skills/`. They ar
 separate from the generated bootcamper plugin. Distribution through this development marketplace
 does not change `propagate-to-public`: that operation remains blocked until its separate public
 repository prerequisite is created.
+
+## Marketplace validation scope
+
+`tools/bootcamp-transform/validate.py` is the only marketplace validator here. It stays
+dependency-free, matching the JSON-formatted `contract.yaml`, which exists so that the build needs
+no YAML or third-party package. The public repository instead runs a schema-based validator
+(`tools/validate_marketplace.py`, using `jsonschema` and `PyYAML`) with its own CI workflow. That
+validator is not adopted here, since it expects the public catalog name `senzing-bootcamp` and
+owner `Senzing`, while this catalog is `senzing-bootcamp-development`.
+
+Both validators check the catalog name and owner, plugin names, repository-relative source paths,
+and name and version agreement between the catalog and `plugin.json`. Three public checks are
+accepted gaps here:
+
+- Full JSON-Schema validation of `plugin.json` and `mcp.json`; `validate.py` checks only the
+  `$schema` URL and the Senzing server definition.
+- Skill `SKILL.md` frontmatter validation.
+- Rejection of duplicate JSON keys.
+
+The pinned-parent rebuild and the generated-file hashes in `.build-manifest.json` already catch
+unexpected changes to generated output. Revisit this decision if a malformed hand-authored
+manifest or skill reaches a release.
