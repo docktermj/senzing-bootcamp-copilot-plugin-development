@@ -251,6 +251,91 @@ class CopilotHookTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout)["decision"], "block")
 
+    def run_in_project(self, action: str, payload: dict) -> tuple[subprocess.CompletedProcess[str], Path]:
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        workspace = Path(temp.name)
+        (workspace / "config").mkdir()
+        (workspace / "config/bootcamp_progress.json").write_text("{}")
+        return self.run_hook(action, workspace, payload), workspace
+
+    # Assembled at runtime so no secret-shaped literal sits in the repository.
+    SYNTHETIC_SECRET = "AKIA" + "1234567890ABCDEF"
+
+    def test_pre_tool_denies_secret_in_write_content(self) -> None:
+        result, _ = self.run_in_project("pre-tool", {
+            "toolName": "write_file",
+            "toolArgs": {"file_path": "notes.txt", "content": self.SYNTHETIC_SECRET},
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["permissionDecision"], "deny")
+
+    def test_pre_tool_allows_ordinary_write_content(self) -> None:
+        result, _ = self.run_in_project("pre-tool", {
+            "tool_name": "write_file",
+            "tool_input": {"file_path": "notes.txt", "content": "Ordinary synthetic note."},
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_pre_tool_scans_apply_patch_text(self) -> None:
+        result, _ = self.run_in_project("pre-tool", {
+            "toolCalls": [{
+                "name": "apply_patch",
+                "args": (
+                    "*** Begin Patch\n*** Add File: notes.txt\n"
+                    f"+{self.SYNTHETIC_SECRET}\n*** End Patch"
+                ),
+            }],
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["permissionDecision"], "deny")
+
+    def test_pre_tool_denies_out_of_project_write_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / "project"
+            (workspace / "config").mkdir(parents=True)
+            (workspace / "config/bootcamp_progress.json").write_text("{}")
+            result = self.run_hook("pre-tool", workspace, {
+                "toolName": "write_file",
+                "toolArgs": {
+                    "file_path": str(workspace.parent / "outside.txt"),
+                    "content": "Ordinary synthetic note.",
+                },
+            })
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["permissionDecision"], "deny")
+
+    def test_stop_alias_payload_blocks_when_active_turn_has_no_question(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            (workspace / "config").mkdir()
+            (workspace / "config/bootcamp_progress.json").write_text("{}")
+            transcript = workspace / "transcript.jsonl"
+            transcript.write_text(
+                "\n".join((
+                    json.dumps({"type": "user.message", "data": {"content": "Continue"}}),
+                    json.dumps({"type": "assistant.message", "data": {"content": "DONE"}}),
+                )),
+                encoding="utf-8",
+            )
+            result = self.run_hook("agent-stop", workspace, {
+                "hook_event_name": "Stop",
+                "stop_hook_active": False,
+                "transcript_path": str(transcript),
+            })
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["decision"], "block")
+
+    def test_stop_alias_does_not_block_its_own_continuation(self) -> None:
+        result, workspace = self.run_in_project("agent-stop", {
+            "hook_event_name": "Stop",
+            "stop_hook_active": True,
+            "transcript_path": "missing.jsonl",
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+
 
 if __name__ == "__main__":
     unittest.main()
