@@ -46,6 +46,23 @@ requires separate explicit maintainer approval; do not push or merge merely to r
 | MP-03 | Run TC-02 through TC-10 in Desktop, including a live Senzing MCP call, project-scoped resume, notes capture, write/secret boundaries using synthetic data, cleanup, progress persistence, and one representative module. Record each outcome rather than inferring it from installation. |
 | MP-04 | Exercise enable/disable, update, and removal in each targeted client. Record the actual controls/commands, resulting version/activation, and any unsupported Desktop management operations; do not assume CLI configuration is shared. |
 
+## App-only controls (from reviewed public evidence)
+
+These procedures come from the public repository's app checklist at
+`Senzing/senzing-bootcamp-copilot-plugin` revision `98474a73625e7154e628c99ac6a1d715749a214a`.
+They are procedures, not results. Record each outcome as passed, failed, unsupported,
+blocked, or unrun with the observed control, command, and client version; never infer a pass
+from the public record, a static test, or a different client.
+
+| ID | Check and required evidence |
+| --- | --- |
+| APP-01 | Establish how the app profile is isolated and record it. Do not assume `COPILOT_HOME` controls the app; record whether an existing signed-in profile was reused. |
+| APP-02 | Use app diagnostics or logs to establish that hooks resolve `${PLUGIN_ROOT}` to the installed/cache directory, not this source checkout. Record the resolved root and observed hook events. |
+| APP-03 | Make a live Senzing MCP call from the app itself. A CLI or external MCP call is not app evidence. |
+| APP-04 | Request in-project, out-of-project, and obvious-secret writes using only synthetic and clearly fake values. A client permission denial alone does not demonstrate the plugin write guard; record hook diagnostics and do not broaden permissions to force a denial. |
+| APP-05 | Resume in a new session from the same checkout, then open an unrelated empty synthetic project and verify that no progress or session data appears. Record that uncommitted state may not carry to a different checkout. |
+| APP-06 | Run the app update control. An unchanged-version or no-op result is not proof of a changed-version upgrade; record the limitation when no changed version exists rather than fabricating one. |
+
 Put results in `docs/test-records/<RELEASE_VERSION>.md` with clearly separated client sections.
 Record authentication/access failures, policy restrictions, unsupported features, and unrun
 checks as failed, blocked, or advisory with reasons, never passing. Required runtime checks
