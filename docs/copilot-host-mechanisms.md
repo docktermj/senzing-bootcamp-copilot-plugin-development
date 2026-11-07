@@ -15,7 +15,30 @@ repository's `docs/test-checklist.md`.
 | How is the extension's own root addressed? | **Verified.** Agent Plugins 1.0 and Copilot plugin formats provide `${PLUGIN_ROOT}`; the hook commands use it for bundled scripts. |
 | Is model or effort selection exposed? | **Verified with a client-dependent limitation.** VS Code custom agents can declare an optional model and the user can select among models available to their account/client. There is no portable family-wide model or effort identifier. The bootcamp uses capability-oriented guidance and does not hard-code a model ID. |
 | Can an MCP server be configured? | **Verified.** Agent Plugins discover MCP server configuration from root `mcp.json`; Copilot CLI and VS Code also support MCP servers. The inherited Senzing HTTP endpoint is retained in that portable file. |
+| What if Senzing MCP tools are missing from the conversation? | **Recovery procedure; deferred-tool discovery is observed, not documented.** See [Senzing MCP tools unavailable](#senzing-mcp-tools-unavailable). |
 | How is pre-compaction handled? | **Not wired in this build.** Copilot CLI documents a `preCompact` event, but this plugin does not configure it. The parent’s pre-compaction recap fold remains an advisory instruction; the bootcamper-facing recap checkpoint is the manual recovery path. |
+
+## Senzing MCP tools unavailable
+
+Use this when Senzing MCP tools cannot be called in the conversation. These are recovery
+measures, not a confirmed root-cause fix or a guarantee against recurrence.
+
+1. **Discover deferred tools before declaring an outage.** *Observed, not documented in the
+   Copilot documentation:* the host can list Senzing tools as deferred, so they must be
+   discovered through the host's tool-search facility before they can be called.
+2. **Call `get_capabilities` live.** A successful result (server version and tool list) shows
+   the tools are exposed and the endpoint is reachable.
+3. **Retry once** if the call fails. Do not loop.
+4. **Separate tool exposure from endpoint reachability.** An endpoint that answers direct
+   requests does not prove the tools are exposed in the conversation. In Copilot CLI,
+   `/mcp show SERVER-NAME` (or `copilot mcp get SERVER-NAME`) shows a server's status and
+   tools; project-level servers load only after folder trust, and a disabled server is not
+   used. In VS Code, a configuration is not proof of use: complete a tool call to verify.
+5. **Preserve workflow state.** Do not change the connection configuration, and resume at the
+   exact step without repeating completed work.
+6. **After one failed retry, stop and tell the Bootcamper** what was checked. Report a
+   suspected server defect for Senzing feedback; submitting it needs the Bootcamper's
+   explicit approval.
 
 ## References
 
@@ -25,6 +48,7 @@ repository's `docs/test-checklist.md`.
 - [Configure agent hooks in VS Code](https://code.visualstudio.com/docs/agent-customization/hooks)
 - [GitHub Copilot hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference)
 - [Adding MCP servers for Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)
+- [Add MCP servers in VS Code](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
 
 The VS Code hooks experience is currently documented as preview. Copilot CLI and cloud-agent
 support differ; this child targets the Copilot plugin format, not cloud-agent execution. Any
