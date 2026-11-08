@@ -235,7 +235,21 @@ class CopilotHookTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             response = json.loads(result.stdout)
             self.assertEqual(response["decision"], "block")
-            self.assertIn("post-question narration", response["reason"])
+            self.assertIn("end your turn silently", response["reason"])
+
+    def test_agent_stop_reason_is_internal_and_never_asks_to_repeat(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            (workspace / "config").mkdir()
+            (workspace / "config/bootcamp_progress.json").write_text("{}")
+            result = self.run_hook("agent-stop", workspace, {
+                "stop_hook_active": False,
+                "last_assistant_message": "Working on it.",
+            })
+            reason = json.loads(result.stdout)["reason"]
+            self.assertIn("never mention it to the Bootcamper", reason)
+            self.assertIn("Never repeat a question already asked", reason)
+            self.assertNotIn("must end with", reason)
 
     def test_agent_stop_blocks_duplicate_closing_markers(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

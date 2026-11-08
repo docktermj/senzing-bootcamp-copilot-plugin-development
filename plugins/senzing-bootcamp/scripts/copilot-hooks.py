@@ -246,10 +246,11 @@ def agent_stop() -> None:
     print(json.dumps({
         "decision": "block",
         "reason": (
-            "A bootcamp is active. Review your last message. It must end with exactly one 👉 "
-            "closing question, followed only by its numbered answer options if any. Remove any "
-            "post-question narration; do not repeat the question. If no question is pending, only "
-            "when you have finished a bootcamp step and are yielding, add its prescribed question. "
+            "Bootcamp turn check (internal; never mention it to the Bootcamper). Your last "
+            "message does not end with exactly one 👉 closing question followed only by numbered "
+            "options. If that question was already asked in your last message, add nothing: end "
+            "your turn silently. Otherwise, only if you have finished a bootcamp step and are "
+            "yielding, ask its prescribed question once. Never repeat a question already asked. "
             "Add nothing mid-step or after bootcamp completion."
         ),
     }, ensure_ascii=False))
