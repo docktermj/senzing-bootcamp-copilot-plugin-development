@@ -91,8 +91,19 @@ for the normative cross-repository rules.
 
 Maintainer operations are GitHub Copilot skills under `.github/skills/`. They are deliberately
 separate from the generated bootcamper plugin. Distribution through this development marketplace
-does not change `propagate-to-public`: that operation remains blocked until its separate public
-repository prerequisite is created.
+does not change `propagate-to-public`, which copies only the plugin payload into a separately
+checked-out public repository's working tree.
+
+## Public-owned content
+
+The public repository (`Senzing/senzing-bootcamp-copilot-plugin`) owns content this repository
+does not mirror: the quick-start page `docs/index.html` and `docs/index.css`, the stub pages
+`docs/README.md`, `best-practices.md`, `errors.md` and `examples.md`, and Senzing organization
+boilerplate (workflows, `CODEOWNERS`, linters, community files, `.claude/`). The quick-start
+page hard-codes the plugin version, marketplace and plugin names, install commands and client
+verification status. The `propagate-to-public` preview runs
+`tools/bootcamp-transform/public_page.py` to report where the page disagrees with the payload;
+updating the page remains a public-repository decision.
 
 ## Marketplace validation scope
 

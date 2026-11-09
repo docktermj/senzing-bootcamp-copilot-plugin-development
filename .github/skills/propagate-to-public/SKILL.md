@@ -11,7 +11,12 @@ push, open a pull request, tag, or release.
 
 1. Verify that the public repository exists and is explicitly checked out as a separate working
    tree. If it does not exist, stop as **blocked** and report the missing prerequisite.
-2. Preview mode is read-only and prints the complete normalized diff.
+2. Preview mode is read-only and prints the complete normalized diff. It also runs
+   `python3 tools/bootcamp-transform/public_page.py --public <checkout>` and includes its
+   table: the public quick-start page's version, plugin identifier and install commands against
+   the payload, plus its client-status text beside the test record's status for human review.
+   A mismatch is reported to the maintainer and never blocks propagation; the page is
+   public-owned and this operation does not edit it.
 3. Apply mode requires an explicit existing review branch and a clean target worktree. Copy only
    the generated bootcamper plugin payload. Rewrite development self-references to the public
    repository slug; do not change curriculum content.
