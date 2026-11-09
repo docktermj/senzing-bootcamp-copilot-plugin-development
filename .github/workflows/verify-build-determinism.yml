@@ -20,6 +20,8 @@ jobs:
         run: python3 tools/bootcamp-transform/transform.py --tag "$(cat PARENT_VERSION)"
       - name: Validate generated output
         run: python3 tools/bootcamp-transform/validate.py
+      - name: Spell-check the payload and quick-start page
+        run: npx --yes cspell@9.2.1 lint --config .vscode/cspell.dev.json --no-progress 'plugins/senzing-bootcamp/**' 'site/**'
       - name: Run focused tests
         run: python3 -m unittest discover -s tools/bootcamp-transform/tests -v
       - name: Reject generated drift

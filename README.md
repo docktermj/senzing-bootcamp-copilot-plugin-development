@@ -108,6 +108,21 @@ The public repository still owns the stub pages `docs/README.md`, `best-practice
 linters, community files, `.claude/`). The `propagate-to-public` preview also runs
 `public_page.py --public <checkout>` to report where the published page disagrees with the payload.
 
+## Spell checking
+
+Public CI spell-checks the repository with `.vscode/cspell.json` and `.vscode/cspell-bootcamp.txt`,
+copied here byte-for-byte from the public repository (`main` at 98474a7) and propagated back by
+`propagate-to-public`. CI here runs the same check on the generated payload and `site/`; run it
+locally with:
+
+```sh
+npx --yes cspell@9.2.1 lint --config .vscode/cspell.dev.json --no-progress \
+  'plugins/senzing-bootcamp/**' 'site/**'
+```
+
+`.vscode/cspell.dev.json` is local-only: it imports the public config and adds `reachings`, the
+wording tracked by #11 (remove it when #11 closes). Maintainer files are not spell-checked.
+
 ## Marketplace validation scope
 
 `tools/bootcamp-transform/validate.py` is the only marketplace validator here. It stays
