@@ -43,7 +43,7 @@
         <div class="wrap hero__inner">
           <div>
             <p class="label">Senzing Agentic AI Bootcamp</p>
-            <h1 id="hero-title">Senzing Bootcamp for <span class="grad">GitHub Copilot</span></h1>
+            <h1 id="hero-title">Senzing Bootcamp for </br><span class="grad">GitHub Copilot</span></h1>
             <p class="lead">From a new project to a guided entity-resolution bootcamp.</p>
             <p class="hero__note">Use the <strong>GitHub Copilot app</strong> for a graphical setup, or install the plugin from the terminal with Copilot CLI.</p>
             <div class="actions">
@@ -126,41 +126,49 @@
                 <li>Install <a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli">GitHub Copilot CLI</a>. It needs an active <a href="https://github.com/features/copilot">GitHub Copilot</a> subscription. Use one of these:
                   <div class="cmd">
                     <p class="cmd__label">macOS or Linux, install script</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: macOS or Linux, install script"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>curl -fsSL https://gh.io/copilot-install | bash</code></pre>
                   </div>
                   <div class="cmd">
                     <p class="cmd__label">macOS or Linux, Homebrew</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: macOS or Linux, Homebrew"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>brew install --cask copilot-cli</code></pre>
                   </div>
                   <div class="cmd">
                     <p class="cmd__label">Windows, WinGet</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: Windows, WinGet"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>winget install GitHub.Copilot</code></pre>
                   </div>
                   <div class="cmd">
                     <p class="cmd__label">Any platform, npm (Node.js 22 or later)</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: Any platform, npm (Node.js 22 or later)"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>npm install -g @github/copilot</code></pre>
                   </div>
                 </li>
                 <li>Add the Senzing Bootcamp marketplace:
                   <div class="cmd">
                     <p class="cmd__label">Terminal</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: copilot plugin marketplace add Senzing/senzing-bootcamp-copilot-plugin"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>copilot plugin marketplace add Senzing/senzing-bootcamp-copilot-plugin</code></pre>
                   </div>
                 </li>
                 <li>Install the plugin (version 0.6.1):
                   <div class="cmd">
                     <p class="cmd__label">Terminal</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: copilot plugin install senzing-bootcamp@senzing-bootcamp"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>copilot plugin install senzing-bootcamp@senzing-bootcamp</code></pre>
                   </div>
                   If the plugin is already installed, update it instead:
                   <div class="cmd">
                     <p class="cmd__label">Terminal</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: copilot plugin update senzing-bootcamp@senzing-bootcamp"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>copilot plugin update senzing-bootcamp@senzing-bootcamp</code></pre>
                   </div>
                 </li>
                 <li>Check that it is installed and enabled:
                   <div class="cmd">
                     <p class="cmd__label">Terminal</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: copilot plugin list"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>copilot plugin list</code></pre>
                   </div>
                   The result looks something like this:
@@ -177,6 +185,7 @@ Installed plugins:
                 <li>Create an empty folder for the bootcamp and start Copilot CLI in it. Always use a new session after installing or enabling the plugin:
                   <div class="cmd">
                     <p class="cmd__label">Terminal</p>
+                    <button type="button" class="cmd__copy" hidden aria-label="Copy command: mkdir senzing-bootcamp"><svg class="cmd__icon" aria-hidden="true" focusable="false"><use href="#icon-copy"></use></svg></button>
                     <pre><code>mkdir senzing-bootcamp
 cd senzing-bootcamp
 copilot</code></pre>
@@ -259,5 +268,49 @@ copilot plugin marketplace remove senzing-bootcamp</code></pre>
         </ul>
       </div>
     </footer>
+    <svg class="visually-hidden" aria-hidden="true" focusable="false">
+      <symbol id="icon-copy" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v12H9zM5 15V3h10"/></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></symbol>
+    </svg>
+    <p class="visually-hidden" id="copy-status" role="status"></p>
+    <script>
+      (function () {
+        var status = document.getElementById("copy-status");
+        var timers = new WeakMap();
+        function selectText(node) {
+          var range = document.createRange();
+          range.selectNodeContents(node);
+          var selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        function confirm(button, message) {
+          var use = button.querySelector("use");
+          use.setAttribute("href", "#icon-check");
+          status.textContent = "";
+          status.textContent = message;
+          clearTimeout(timers.get(button));
+          timers.set(button, setTimeout(function () {
+            use.setAttribute("href", "#icon-copy");
+          }, 2000));
+        }
+        document.querySelectorAll(".cmd__copy").forEach(function (button) {
+          button.hidden = false;
+          button.addEventListener("click", function () {
+            var code = button.closest(".cmd").querySelector("pre code");
+            var text = code.textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(function () {
+                confirm(button, "Copied");
+              }, function () {
+                selectText(code);
+              });
+            } else {
+              selectText(code);
+            }
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
