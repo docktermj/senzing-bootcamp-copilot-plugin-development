@@ -110,27 +110,70 @@
             <article class="card" id="cli">
               <p class="card__kind">Terminal setup</p>
               <h3>Copilot CLI</h3>
-              <p>Add the public marketplace and install its plugin using the <a href="https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference">Copilot CLI plugin commands</a>:</p>
-              <div class="cmd">
-                <p class="cmd__label">Terminal</p>
-                <pre><code>copilot plugin marketplace add Senzing/senzing-bootcamp-copilot-plugin
-copilot plugin marketplace browse senzing-bootcamp
-copilot plugin install senzing-bootcamp@senzing-bootcamp
-copilot plugin enable senzing-bootcamp@senzing-bootcamp</code></pre>
-              </div>
-              <p>Check that it is installed and enabled:</p>
-              <div class="cmd">
-                <p class="cmd__label">Terminal</p>
-                <pre><code>copilot plugin list</code></pre>
-              </div>
-              <p>The marketplace name is <code>senzing-bootcamp</code>; the installed identifier is <code>senzing-bootcamp@senzing-bootcamp</code>. <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin#install-through-the-cli-marketplace">Optional direct-subdirectory installation</a> is a separate route, not a marketplace verification.</p>
-              <p>Start Copilot CLI in your empty project folder. Use a new session after installing or enabling the plugin.</p>
-              <div class="cmd">
-                <p class="cmd__label">Terminal</p>
-                <pre><code>mkdir senzing-bootcamp
+              <p>These steps use the <a href="https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference">Copilot CLI plugin commands</a>.</p>
+              <ol class="steps">
+                <li>Install <a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli">GitHub Copilot CLI</a>. It needs an active <a href="https://github.com/features/copilot">GitHub Copilot</a> subscription. Use one of these:
+                  <div class="cmd">
+                    <p class="cmd__label">macOS or Linux, install script</p>
+                    <pre><code>curl -fsSL https://gh.io/copilot-install | bash</code></pre>
+                  </div>
+                  <div class="cmd">
+                    <p class="cmd__label">macOS or Linux, Homebrew</p>
+                    <pre><code>brew install --cask copilot-cli</code></pre>
+                  </div>
+                  <div class="cmd">
+                    <p class="cmd__label">Windows, WinGet</p>
+                    <pre><code>winget install GitHub.Copilot</code></pre>
+                  </div>
+                  <div class="cmd">
+                    <p class="cmd__label">Any platform, npm (Node.js 22 or later)</p>
+                    <pre><code>npm install -g @github/copilot</code></pre>
+                  </div>
+                </li>
+                <li>Add the Senzing Bootcamp marketplace:
+                  <div class="cmd">
+                    <p class="cmd__label">Terminal</p>
+                    <pre><code>copilot plugin marketplace add Senzing/senzing-bootcamp-copilot-plugin</code></pre>
+                  </div>
+                </li>
+                <li>Install the plugin (version 0.6.1):
+                  <div class="cmd">
+                    <p class="cmd__label">Terminal</p>
+                    <pre><code>copilot plugin install senzing-bootcamp@senzing-bootcamp</code></pre>
+                  </div>
+                  If the plugin is already installed, update it instead:
+                  <div class="cmd">
+                    <p class="cmd__label">Terminal</p>
+                    <pre><code>copilot plugin update senzing-bootcamp@senzing-bootcamp</code></pre>
+                  </div>
+                </li>
+                <li>Check that it is installed and enabled:
+                  <div class="cmd">
+                    <p class="cmd__label">Terminal</p>
+                    <pre><code>copilot plugin list</code></pre>
+                  </div>
+                  The result looks something like this:
+                  <div class="cmd">
+                    <p class="cmd__label">Output</p>
+                    <pre><code>Built-in plugins:
+  • browser-use (v0.1.0) [disabled]
+
+Installed plugins:
+  • senzing-bootcamp@senzing-bootcamp (v0.6.1)</code></pre>
+                  </div>
+                  The marketplace name is <code>senzing-bootcamp</code>; the installed identifier is <code>senzing-bootcamp@senzing-bootcamp</code>. <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin#install-through-the-cli-marketplace">Optional direct-subdirectory installation</a> is a separate route, not a marketplace verification.
+                </li>
+                <li>Create an empty folder for the bootcamp and start Copilot CLI in it. Always use a new session after installing or enabling the plugin:
+                  <div class="cmd">
+                    <p class="cmd__label">Terminal</p>
+                    <pre><code>mkdir senzing-bootcamp
 cd senzing-bootcamp
 copilot</code></pre>
-              </div>
+                  </div>
+                  If you are asked to sign in, enter <code>/login</code> and follow the on-screen instructions.
+                </li>
+                <li>In the Copilot CLI session, enter <code>Start the bootcamp</code>.</li>
+              </ol>
             </article>
           </div>
         </div>
