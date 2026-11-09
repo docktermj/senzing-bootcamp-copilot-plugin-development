@@ -73,6 +73,30 @@ class PublicPageTests(unittest.TestCase):
         self.assertEqual(result["page"], "not found")
         self.assertIn("not found", public_page.render(result))
 
+    def test_local_page_uses_public_marketplace_name(self) -> None:
+        (self.public / "site").mkdir()
+        (self.public / "site/index.html").write_text(PAGE.format(version="0.6.1"))
+        result = public_page.check_page(
+            self.public / "site/index.html", public_page.PUBLIC_MARKETPLACE,
+            self.payload, self.record)
+        self.assertTrue(all(item["match"] for item in result["facts"]))
+
+    def test_local_mode_fails_on_missing_or_stale_page(self) -> None:
+        stale = public_page.check_page(
+            self.public / "docs/missing.html", "senzing-bootcamp", self.payload, self.record)
+        self.assertEqual(stale["page"], "not found")
+        self.page("0.6.0")
+        result = public_page.check_page(
+            self.public / "docs/index.html", "senzing-bootcamp", self.payload, self.record)
+        self.assertFalse(all(item["match"] for item in result["facts"]))
+
+    def test_committed_site_page_matches_payload(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "tools/bootcamp-transform/public_page.py"), "--local"],
+            text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_non_public_checkout_is_blocked(self) -> None:
         result = subprocess.run(
             [sys.executable, str(ROOT / "tools/bootcamp-transform/public_page.py"),

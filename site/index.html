@@ -1,0 +1,199 @@
+<!doctype html>
+<!--
+  Copilot quick-start page for the Senzing Bootcamp.
+  Keep the install steps and prerequisites aligned with the plugin manifest,
+  marketplace catalog, and the verified host test record.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Senzing Bootcamp for GitHub Copilot</title>
+    <meta name="description" content="Install the Senzing Bootcamp plugin for GitHub Copilot and start the bootcamp.">
+    <link rel="canonical" href="https://hub.senzing.com/senzing-bootcamp-copilot-plugin/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Senzing Bootcamp for GitHub Copilot">
+    <meta property="og:description" content="Install Senzing Bootcamp for GitHub Copilot and start learning entity resolution.">
+    <meta property="og:url" content="https://hub.senzing.com/senzing-bootcamp-copilot-plugin/">
+    <meta name="theme-color" content="#0F0D0C">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800&amp;family=Roboto+Mono:wght@400;500&amp;display=swap">
+    <link rel="stylesheet" href="index.css">
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="nav">
+      <div class="wrap nav__inner">
+        <a class="brand" href="#top" aria-label="Senzing Bootcamp for GitHub Copilot, back to top">
+          <span class="brand__word">SENZING</span>
+        </a>
+        <nav aria-label="Site">
+          <ul class="nav__links">
+            <li><a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin">GitHub</a></li>
+            <li><a class="nav__cta" href="https://hub.senzing.com/bootcamp/">All bootcamps</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero dark" id="top" aria-labelledby="hero-title">
+        <div class="wrap hero__inner">
+          <div>
+            <p class="label">Senzing Agentic AI Bootcamp</p>
+            <h1 id="hero-title">Senzing Bootcamp for <span class="grad">GitHub Copilot</span></h1>
+            <p class="lead">From a new project to a guided entity-resolution bootcamp.</p>
+            <p class="hero__note">Use the <strong>GitHub Copilot app</strong> for a graphical setup, or install the plugin from the terminal with Copilot CLI.</p>
+            <div class="actions">
+              <a class="btn btn--primary" href="#install">Get started</a>
+            </div>
+            <p class="hero__more"><a href="https://hub.senzing.com/bootcamp/">New to the bootcamp? See the curriculum</a></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="light white" id="before" aria-labelledby="before-title">
+        <div class="wrap">
+          <p class="label">Before you start</p>
+          <h2 id="before-title">What you need</h2>
+          <ul class="checklist">
+            <li><strong>GitHub Copilot access</strong> and a GitHub account signed in to your client. You need read access to this repository to install its plugin.</li>
+            <li><strong>Permission to use plugins.</strong> Organization or enterprise policies can restrict marketplace access or plugin installation.</li>
+            <li><strong>Network access to the <a href="https://mcp.senzing.com/mcp">Senzing MCP server</a></strong> at <code>https://mcp.senzing.com/mcp</code>. The bootcamp needs it to ground Senzing-specific guidance. On a corporate network or VPN, ask for <code>mcp.senzing.com</code> to be allowed.</li>
+            <li><strong>Python 3</strong> available as <code>python3</code> on your <code>PATH</code>, including on Windows. A <code>python</code> or <code>py</code> alias alone is not enough. The plugin's lifecycle hooks and the graduation recap use Python.</li>
+            <li><strong>Review before trusting:</strong> inspect the plugin's skills, scripts, hooks, MCP server, and requested tool permissions. Hooks execute local Python commands.</li>
+            <li><strong>A new, empty project folder</strong> for the bootcamp. Keep bootcamp files in that project.</li>
+            <li><span class="tag">Recommended</span> <strong>A business problem and 5,000 to 20,000 records</strong> that illustrate it. Helpful, not required to get started.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="light offwhite" id="install" aria-labelledby="install-title">
+        <div class="wrap">
+          <p class="label">Install and start</p>
+          <h2 id="install-title">Choose how you use Copilot</h2>
+          <div class="cards">
+            <article class="card" id="desktop">
+              <p class="card__kind">Graphical setup</p>
+              <h3>GitHub Copilot app</h3>
+              <p>Install from the app's Customize view, then enable the plugin in Installed.</p>
+              <ol class="steps">
+                <li>Open the GitHub Copilot app and sign in.</li>
+                <li>Create or open a project using your new, empty folder.</li>
+                <li>Open <strong>Customize</strong>. Use the <a href="https://docs.github.com/en/copilot/how-tos/github-copilot-app/customize-github-copilot-app#adding-plugins">marketplace settings control</a> beside the marketplace dropdown to add <code>https://github.com/Senzing/senzing-bootcamp-copilot-plugin</code>.</li>
+                <li>Search for <code>senzing-bootcamp</code> (displayed as <code>senzing-bootcamp</code>, version 0.6.1) in Customize and click <strong>Install</strong>.</li>
+                <li>Open <strong>Installed</strong> and make sure the plugin is enabled.</li>
+              </ol>
+              <p class="callout"><strong>Published; app verification partial:</strong> remote CLI lifecycle checks passed. Copilot app 1.1.35 installation, management, live MCP, modules, and same-checkout resume were observed. An initial secret-like write check failed on an earlier revision; synthetic write probes after the merged hook fix were allowed or denied as intended. Several required checks remain unrun. See the <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/blob/main/docs/test-records/0.6.1.md">test record</a>. <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/issues/7">Issue #7</a> was closed before all acceptance checks passed; parent <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/issues/5">issue #5</a> remains open. If the marketplace is unavailable, check authentication, repository access, client support, and organization policy. Do not bypass managed restrictions.</p>
+            </article>
+            <article class="card" id="cli">
+              <p class="card__kind">Terminal setup</p>
+              <h3>Copilot CLI</h3>
+              <p>Add the public marketplace and install its plugin using the <a href="https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference">Copilot CLI plugin commands</a>:</p>
+              <div class="cmd">
+                <p class="cmd__label">Terminal</p>
+                <pre><code>copilot plugin marketplace add Senzing/senzing-bootcamp-copilot-plugin
+copilot plugin marketplace browse senzing-bootcamp
+copilot plugin install senzing-bootcamp@senzing-bootcamp
+copilot plugin enable senzing-bootcamp@senzing-bootcamp</code></pre>
+              </div>
+              <p>Check that it is installed and enabled:</p>
+              <div class="cmd">
+                <p class="cmd__label">Terminal</p>
+                <pre><code>copilot plugin list</code></pre>
+              </div>
+              <p>The marketplace name is <code>senzing-bootcamp</code>; the installed identifier is <code>senzing-bootcamp@senzing-bootcamp</code>. <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin#install-through-the-cli-marketplace">Optional direct-subdirectory installation</a> is a separate route, not a marketplace verification.</p>
+              <p>Start Copilot CLI in your empty project folder. Use a new session after installing or enabling the plugin.</p>
+              <div class="cmd">
+                <p class="cmd__label">Terminal</p>
+                <pre><code>mkdir senzing-bootcamp
+cd senzing-bootcamp
+copilot</code></pre>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="light white" id="start" aria-labelledby="start-title">
+        <div class="wrap">
+          <p class="label">Start learning</p>
+          <h2 id="start-title">Start the bootcamp</h2>
+          <p class="intro">With the empty bootcamp project open in your Copilot client, enter:</p>
+          <div class="cmd cmd--light">
+            <p class="cmd__label">Copilot chat</p>
+            <pre><code>Start the bootcamp</code></pre>
+          </div>
+          <p class="intro">The bootcamp helps you choose a curriculum, level of detail, and programming language, then guides you through the modules one step at a time. <a href="https://hub.senzing.com/bootcamp/">See every module</a>.</p>
+        </div>
+      </section>
+
+      <section class="light offwhite" id="manage" aria-labelledby="manage-title">
+        <div class="wrap">
+          <p class="label">Good to know</p>
+          <h2 id="manage-title">Manage the plugin</h2>
+          <div class="callout">
+            <h3>Copilot app</h3>
+            <p>Open <strong>Customize → Installed</strong> to turn the plugin on or off. App marketplace and plugin controls can vary; follow the controls shown in your client.</p>
+          </div>
+          <div class="callout">
+            <h3>Copilot CLI</h3>
+            <p>To refresh the marketplace catalog and update its plugin, run:</p>
+            <div class="cmd">
+              <p class="cmd__label">Terminal</p>
+              <pre><code>copilot plugin marketplace update senzing-bootcamp
+copilot plugin update senzing-bootcamp@senzing-bootcamp</code></pre>
+            </div>
+            <p>To disable or remove it:</p>
+            <div class="cmd">
+              <p class="cmd__label">Terminal</p>
+              <pre><code>copilot plugin disable senzing-bootcamp@senzing-bootcamp
+copilot plugin enable senzing-bootcamp@senzing-bootcamp
+# Only when you want to remove the plugin and catalog:
+copilot plugin uninstall senzing-bootcamp@senzing-bootcamp
+copilot plugin marketplace remove senzing-bootcamp</code></pre>
+            </div>
+          </div>
+          <div class="callout callout--notice">
+            <h3>Client support status</h3>
+            <p>Installation and runtime support are different checks. The <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/blob/main/docs/test-records/0.6.1.md">0.6.1 test record</a> covers the remote CLI lifecycle and selected Copilot app 1.1.35 checks on Ubuntu 24.04.5 LTS. Synthetic write probes passed after the merged hook fix, and the documented checkpoint fallback was resumed in a same-checkout session. Skill invocation coverage, exact hook-root diagnostics, a complete stop/session-end check, and a changed-version update remain incomplete. <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/issues/7">Issue #7</a> is closed despite the remaining checks; parent <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/issues/5">issue #5</a> remains open. Do not infer app compatibility from a successful install, or assume CLI configuration is shared with the app. Other client versions and OSes remain unverified.</p>
+          </div>
+          <div class="callout">
+            <h3>Model and effort</h3>
+            <p>Copilot's available models and controls depend on your client and account. Follow the bootcamp's model and effort suggestions using your client's controls; model names and commands are not portable across clients.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="closing dark" id="other" aria-labelledby="other-title">
+        <div class="wrap">
+          <p class="label">Other platforms</p>
+          <h2 id="other-title">Using a different AI assistant?</h2>
+          <p class="lead">The same bootcamp runs in Claude, ChatGPT, and Kiro.</p>
+          <div class="actions">
+            <a class="btn btn--outline" href="https://hub.senzing.com/senzing-bootcamp-claude-plugin/">Claude</a>
+            <a class="btn btn--outline" href="https://hub.senzing.com/senzing-bootcamp-chatgpt-plugin/">ChatGPT</a>
+            <a class="btn btn--outline" href="https://hub.senzing.com/senzing-bootcamp-kiro-power/">Kiro</a>
+            <a class="btn btn--outline" href="https://hub.senzing.com/bootcamp/">All bootcamps</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer dark">
+      <div class="wrap footer__inner">
+        <p class="brand">
+          <span class="brand__word">SENZING</span>
+        </p>
+        <p>Senzing Agentic AI Bootcamp · © 2026 Senzing, Inc.</p>
+        <ul class="footer__links">
+          <li><a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin">GitHub</a></li>
+          <li><a href="https://hub.senzing.com/bootcamp/">All bootcamps</a></li>
+          <li><a href="#top">Back to top</a></li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>
