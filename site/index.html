@@ -64,7 +64,7 @@
             <li><strong>Network access to the <a href="https://mcp.senzing.com/mcp">Senzing MCP server</a></strong> at <code>https://mcp.senzing.com/mcp</code>. The bootcamp needs it to ground Senzing-specific guidance. On a corporate network or VPN, ask for <code>mcp.senzing.com</code> to be allowed.</li>
             <li><strong>Python 3</strong> available as <code>python3</code> on your <code>PATH</code>, including on Windows. A <code>python</code> or <code>py</code> alias alone is not enough. The plugin's lifecycle hooks and the graduation recap use Python.</li>
             <li><strong>Review before trusting:</strong> inspect the plugin's skills, scripts, hooks, MCP server, and requested tool permissions. Hooks execute local Python commands.</li>
-            <li><strong>A new, empty project folder</strong> for the bootcamp. Keep bootcamp files in that project.</li>
+            <li><strong>A new, empty project folder</strong> for the bootcamp. Keep bootcamp files in that project. You choose it when you start a session.</li>
             <li><span class="tag">Recommended</span> <strong>A business problem and 5,000 to 20,000 records</strong> that illustrate it. Helpful, not required to get started.</li>
           </ul>
         </div>
@@ -78,13 +78,34 @@
             <article class="card" id="desktop">
               <p class="card__kind">Graphical setup</p>
               <h3>GitHub Copilot app</h3>
-              <p>Install from the app's Customize view, then enable the plugin in Installed.</p>
+              <p>Install from the app's Customize view, then enable the plugin in Installed. These steps may change with the version of the GitHub Copilot app; see the <a href="https://docs.github.com/en/copilot/how-tos/github-copilot-app/customize-github-copilot-app#adding-plugins">app's plugin documentation</a>.</p>
               <ol class="steps">
-                <li>Open the GitHub Copilot app and sign in.</li>
-                <li>Create or open a project using your new, empty folder.</li>
-                <li>Open <strong>Customize</strong>. Use the <a href="https://docs.github.com/en/copilot/how-tos/github-copilot-app/customize-github-copilot-app#adding-plugins">marketplace settings control</a> beside the marketplace dropdown to add <code>https://github.com/Senzing/senzing-bootcamp-copilot-plugin</code>.</li>
-                <li>Search for <code>senzing-bootcamp</code> (displayed as <code>senzing-bootcamp</code>, version 0.6.1) in Customize and click <strong>Install</strong>.</li>
+                <li>Get and install <a href="https://github.com/features/copilot">GitHub Copilot</a>.</li>
+                <li>Open the <strong>GitHub Copilot</strong> app and sign in with your GitHub account.</li>
+                <li>Add the marketplace:
+                  <ol>
+                    <li>In the left-hand navigation, select <strong>Customize</strong>.</li>
+                    <li>In the upper right, click <strong>+ Add</strong> &gt; <strong>Manage marketplaces...</strong></li>
+                    <li>For <strong>Source</strong>, enter <code>https://github.com/Senzing/senzing-bootcamp-copilot-plugin</code>.</li>
+                    <li>Click <strong>Add</strong>, then close the <strong>Manage marketplaces</strong> dialog.</li>
+                  </ol>
+                </li>
+                <li>Install the plugin:
+                  <ol>
+                    <li>In the left-hand navigation, select <strong>Customize</strong>.</li>
+                    <li>In the upper right, click <strong>+ Add</strong> &gt; <strong>Plugin...</strong></li>
+                    <li>For <strong>Name</strong>, enter <code>senzing-bootcamp@senzing-bootcamp</code> (version 0.6.1).</li>
+                    <li>Click <strong>Install</strong>.</li>
+                  </ol>
+                </li>
                 <li>Open <strong>Installed</strong> and make sure the plugin is enabled.</li>
+                <li>Start a session in your empty folder:
+                  <ol>
+                    <li>In the left-hand navigation, select <strong>Sessions</strong>, then click <strong>New</strong> (the plus sign <strong>+</strong>) &gt; <strong>Add local folder or repository</strong>.</li>
+                    <li>Create or select a new, empty folder.</li>
+                  </ol>
+                </li>
+                <li>In Agentic Chat, enter <code>Start the bootcamp</code>.</li>
               </ol>
               <p class="callout"><strong>Published; app verification partial:</strong> remote CLI lifecycle checks passed. Copilot app 1.1.35 installation, management, live MCP, modules, and same-checkout resume were observed. An initial secret-like write check failed on an earlier revision; synthetic write probes after the merged hook fix were allowed or denied as intended. Several required checks remain unrun. See the <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/blob/main/docs/test-records/0.6.1.md">test record</a>. <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/issues/7">Issue #7</a> was closed before all acceptance checks passed; parent <a href="https://github.com/Senzing/senzing-bootcamp-copilot-plugin/issues/5">issue #5</a> remains open. If the marketplace is unavailable, check authentication, repository access, client support, and organization policy. Do not bypass managed restrictions.</p>
             </article>
