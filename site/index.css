@@ -368,13 +368,19 @@ code {
 
 .steps {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   margin-top: 1rem;
   padding-left: 1.35rem;
 }
 
 .steps li {
+  min-width: 0;
   padding: 0.4rem 0 0.4rem 0.25rem;
+}
+
+.steps .cmd {
+  margin-bottom: 0.75rem;
 }
 
 .steps li::marker {
@@ -399,14 +405,6 @@ code {
   margin-top: 0.5rem;
 }
 
-.callout--notice {
-  border-left-color: #a64b18;
-}
-
-.callout--notice h3 {
-  color: #7d3510;
-}
-
 .cmd {
   position: relative;
   margin-top: 0.85rem;
@@ -428,7 +426,8 @@ code {
   overflow-x: auto;
   color: var(--head-dark);
   font: 0.83rem/1.6 var(--mono);
-  white-space: pre;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .cmd code {
