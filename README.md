@@ -96,14 +96,17 @@ checked-out public repository's working tree.
 
 ## Public-owned content
 
-The public repository (`Senzing/senzing-bootcamp-copilot-plugin`) owns content this repository
-does not mirror: the quick-start page `docs/index.html` and `docs/index.css`, the stub pages
-`docs/README.md`, `best-practices.md`, `errors.md` and `examples.md`, and Senzing organization
-boilerplate (workflows, `CODEOWNERS`, linters, community files, `.claude/`). The quick-start
-page hard-codes the plugin version, marketplace and plugin names, install commands and client
-verification status. The `propagate-to-public` preview runs
-`tools/bootcamp-transform/public_page.py` to report where the page disagrees with the payload;
-updating the page remains a public-repository decision.
+The quick-start page source is `site/index.html` and `site/index.css`, copied from the public
+repository (`Senzing/senzing-bootcamp-copilot-plugin`, `main` at 98474a7). It is written with the
+public names, is not part of the plugin payload, and reaches the public `docs/` through
+`propagate-to-public`. `validate.py` fails if the page's version, plugin identifier or install
+commands disagree with the payload; run `python3 tools/bootcamp-transform/public_page.py --local`
+for the table. The client verification status text is for human review and is not compared.
+
+The public repository still owns the stub pages `docs/README.md`, `best-practices.md`,
+`errors.md` and `examples.md`, and Senzing organization boilerplate (workflows, `CODEOWNERS`,
+linters, community files, `.claude/`). The `propagate-to-public` preview also runs
+`public_page.py --public <checkout>` to report where the published page disagrees with the payload.
 
 ## Marketplace validation scope
 

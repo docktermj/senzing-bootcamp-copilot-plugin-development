@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+import public_page
 import transform
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -176,8 +177,28 @@ def check_python_sources() -> None:
                 )
 
 
+def check_site_page() -> None:
+    result = public_page.check_page(
+        ROOT / public_page.LOCAL_PAGE,
+        public_page.PUBLIC_MARKETPLACE,
+        PLUGIN,
+        ROOT / "docs/test-records/unused.md",
+    )
+    if result["page"] == "not found":
+        errors.append(f"quick-start page is missing: {public_page.LOCAL_PAGE}")
+        return
+    if not (ROOT / "site/index.css").is_file():
+        errors.append("quick-start stylesheet is missing: site/index.css")
+    for item in result["facts"]:
+        if not item["match"]:
+            errors.append(
+                f"{public_page.LOCAL_PAGE} {item['fact']} is {item['page']}; payload expects {item['payload']}"
+            )
+
+
 def check() -> None:
     check_marketplace()
+    check_site_page()
     if not PLUGIN.is_dir():
         errors.append("generated plugin directory is missing")
         return

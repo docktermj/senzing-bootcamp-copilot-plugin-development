@@ -13,6 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_SLUG = "Senzing/senzing-bootcamp-copilot-plugin"
 PAGE = "docs/index.html"
+LOCAL_PAGE = "site/index.html"
+PUBLIC_MARKETPLACE = "senzing-bootcamp"
 CATALOG = ".github/plugin/marketplace.json"
 
 
@@ -37,13 +39,17 @@ def record_status(record: Path) -> str:
 
 
 def check(public: Path, payload: Path, record: Path) -> dict:
-    page_path = public / PAGE
+    catalog = public / CATALOG
+    marketplace = json.loads(_text(catalog))["name"] if catalog.is_file() else PUBLIC_MARKETPLACE
+    return check_page(public / PAGE, marketplace, payload, record)
+
+
+def check_page(page_path: Path, marketplace: str, payload: Path, record: Path) -> dict:
     if not page_path.is_file():
         return {"page": "not found", "facts": [], "status": None}
     page = _text(page_path)
     manifest = json.loads(_text(payload / "plugin.json"))
-    catalog = json.loads(_text(public / CATALOG))
-    identifier = f"{manifest['name']}@{catalog['name']}"
+    identifier = f"{manifest['name']}@{marketplace}"
     versions = sorted(set(re.findall(r"version\s+(\d+\.\d+\.\d+)", page)))
     facts = [
         ("version", ", ".join(versions) or "absent", manifest["version"],
@@ -65,9 +71,9 @@ def check(public: Path, payload: Path, record: Path) -> dict:
     }
 
 
-def render(result: dict) -> str:
+def render(result: dict, location: str = PAGE) -> str:
     if result["page"] == "not found":
-        return f"Public quick-start page not found at {PAGE}; nothing to compare."
+        return f"Quick-start page not found at {location}; nothing to compare."
     lines = ["| Fact | Public page | Payload | Result |", "|---|---|---|---|"]
     for item in result["facts"]:
         lines.append(
@@ -88,15 +94,22 @@ def render(result: dict) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--public", required=True, type=Path, help="explicit public checkout")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--public", type=Path, help="explicit public checkout")
+    mode.add_argument("--local", action="store_true", help=f"check {LOCAL_PAGE} in this repository")
     parser.add_argument("--payload", type=Path, default=ROOT / "plugins/senzing-bootcamp")
     parser.add_argument("--record-dir", type=Path, default=ROOT / "docs/test-records")
     arguments = parser.parse_args()
+    version = _text(ROOT / "RELEASE_VERSION").strip()
+    record = arguments.record_dir / f"{version}.md"
+    if arguments.local:
+        result = check_page(ROOT / LOCAL_PAGE, PUBLIC_MARKETPLACE, arguments.payload, record)
+        print(render(result, LOCAL_PAGE))
+        return 1 if result["page"] == "not found" or not all(i["match"] for i in result["facts"]) else 0
     if not (arguments.public / CATALOG).is_file():
         print(f"Blocked: {arguments.public} is not a public checkout", file=sys.stderr)
         return 2
-    version = _text(ROOT / "RELEASE_VERSION").strip()
-    print(render(check(arguments.public, arguments.payload, arguments.record_dir / f"{version}.md")))
+    print(render(check(arguments.public, arguments.payload, record)))
     return 0
 
 
