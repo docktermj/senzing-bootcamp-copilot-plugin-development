@@ -413,6 +413,49 @@ code {
   background: var(--surface);
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cmd__copy {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--body-dark);
+  cursor: pointer;
+}
+
+.cmd__copy:hover {
+  background: var(--hairline-dark);
+  color: var(--head-dark);
+}
+
+.cmd__copy:focus-visible {
+  outline: 2px solid var(--ember-core);
+  outline-offset: 1px;
+}
+
+.cmd__icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 .cmd__label {
   padding: 0.45rem 0.8rem;
   border-bottom: 1px solid var(--hairline-dark);
