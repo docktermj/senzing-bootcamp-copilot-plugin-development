@@ -1,0 +1,29 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "bootcamp",
+    "CCLA",
+    "choosealicense",
+    "claudecommandssenzingmd",
+    "CODEOWNER",
+    "CODEOWNERS",
+    "cooldown",
+    "esbenp",
+    "ICLA",
+    "jsonschema",
+    "kernelsam",
+    "Senzing",
+    "stackoverflow",
+    "zizmor"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "senzing-bootcamp",
+      "path": "./cspell-bootcamp.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": ["senzing-bootcamp"],
+  "ignorePaths": [".git/**"]
+}
