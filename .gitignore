@@ -5,3 +5,4 @@ __pycache__/
 docs/test-records/*.tmp
 
 .history
+SENZING_BOOTCAMP_PLUGIN_FEEDBACK.md
