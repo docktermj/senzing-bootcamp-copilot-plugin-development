@@ -22,7 +22,9 @@ writes to the parent and does not run the transform.
 5. For an escalated issue, require the parent issue to be completed, the local issue to carry
    `awaiting-parity`, both issue bodies to cross-reference each other, and the fix commit to be
    an ancestor of the target parent tag. Confirm the development and public plugin trees match
-   at that tag and that this checkout's parent pin names the same public commit.
+   at that tag, allowing only validated `homepage` and `repository` URLs that identify their
+   respective repositories in `.claude-plugin/plugin.json`; every other manifest field and file
+   must match. Also confirm that this checkout's parent pin names the same public commit.
 6. Use `tools/bootcamp-transform/escalations.py` to produce the R7 verdict. Add `--apply` only
    when the verdict is `ready-to-close`; a parent `not_planned` closure is a human decision and
    never closes the local issue.
