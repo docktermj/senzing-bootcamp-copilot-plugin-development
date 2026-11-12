@@ -42,6 +42,8 @@ invariant dispositions; this file owns host packaging, execution, and release gu
   Copilot plugin repository does not exist.
 - **CPINV-010** — The feedback ledger MUST identify entries by content hash and MUST NOT mark a
   duplicate entry as newly processed.
+- **CPINV-011** — The transform MUST reject missing, unregistered, multiply referenced, already
+  upstream, or unlinked local patches before writing generated output.
 
 ## Index by subject
 
@@ -52,4 +54,5 @@ invariant dispositions; this file owns host packaging, execution, and release gu
 | Maintainer operation surface | CPINV-003 |
 | Update and release gates | CPINV-005, CPINV-006, CPINV-008, CPINV-010 |
 | Transform coverage | CPINV-007 |
+| Local patch registry | CPINV-011 |
 | Public propagation boundary | CPINV-009 |

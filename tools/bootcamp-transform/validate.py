@@ -207,6 +207,14 @@ def check() -> None:
     except transform.TransformError as error:
         errors.append(f"transformation contract is invalid: {error}")
         contract = {}
+    local_patch_errors = transform.validate_local_patch_registry(contract, ROOT)
+    errors.extend(local_patch_errors)
+    expected_local_patches: list[dict[str, str]] = []
+    if not local_patch_errors:
+        try:
+            expected_local_patches = transform.local_patch_records(contract, ROOT)
+        except transform.TransformError as error:
+            errors.append(f"local patch registry is invalid: {error}")
     plugin_manifest = read_json(PLUGIN / "plugin.json", "plugin manifest")
     release_version = (ROOT / "RELEASE_VERSION").read_text(encoding="utf-8").strip()
     parent_version = (ROOT / "PARENT_VERSION").read_text(encoding="utf-8").strip()
@@ -285,6 +293,8 @@ def check() -> None:
         errors.append("build manifest does not match the pinned parent provenance")
     if manifest.get("release_version") != release_version:
         errors.append("build manifest release_version differs from RELEASE_VERSION")
+    if manifest.get("local_patches", []) != expected_local_patches:
+        errors.append("build manifest local patch records differ from the contract")
     files = manifest.get("files", {})
     actual_files = {
         path.relative_to(PLUGIN).as_posix(): path

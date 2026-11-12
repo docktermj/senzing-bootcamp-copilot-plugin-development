@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +22,9 @@ COMMIT_FILE = ROOT / "PARENT_COMMIT"
 BUILD_MANIFEST = ROOT / ".build-manifest.json"
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
+LOCAL_PATCH_ROOT = "tools/bootcamp-transform/patches"
+LOCAL_REPOSITORY = "docktermj/senzing-bootcamp-copilot-plugin-development"
+PARENT_REPOSITORY = "docktermj/senzing-bootcamp-claude-plugin-development"
 
 
 class TransformError(RuntimeError):
@@ -79,6 +82,232 @@ def file_hashes(root: Path) -> dict[str, str]:
         path.relative_to(root).as_posix(): sha256(path)
         for path in sorted(root.rglob("*")) if path.is_file()
     }
+
+
+def _issue_url(value: Any, repository: str) -> bool:
+    return (
+        isinstance(value, str)
+        and re.fullmatch(
+            rf"https://github\.com/{re.escape(repository)}/issues/[1-9]\d*", value
+        ) is not None
+    )
+
+
+def validate_local_patch_registry(
+    contract: dict[str, Any], repository_root: Path | None = None
+) -> list[str]:
+    root = (ROOT if repository_root is None else repository_root).resolve()
+    entries = contract.get("local_patches", [])
+    if not isinstance(entries, list):
+        return ["E_INVALID_LOCAL_PATCHES: local_patches must be a list"]
+
+    errors: list[str] = []
+    required_keys = {"id", "issue", "patch", "upstream", "reason"}
+    patch_directory = root / LOCAL_PATCH_ROOT
+    patch_root = patch_directory.resolve()
+    patch_root_is_safe = patch_root == patch_directory
+    if not patch_root_is_safe:
+        errors.append("E_INVALID_LOCAL_PATCHES: patch directory must not traverse symlinks")
+    referenced: list[str] = []
+    identifiers: set[str] = set()
+
+    for index, entry in enumerate(entries):
+        label = f"local_patches[{index}]"
+        if not isinstance(entry, dict):
+            errors.append(f"E_INVALID_LOCAL_PATCHES: {label} must be an object")
+            continue
+        missing = required_keys - entry.keys()
+        extra = entry.keys() - required_keys
+        if missing or extra:
+            details = []
+            if missing:
+                details.append(f"missing {sorted(missing)}")
+            if extra:
+                details.append(f"unexpected {sorted(extra)}")
+            errors.append(f"E_INVALID_LOCAL_PATCHES: {label}: {', '.join(details)}")
+
+        patch_id = entry.get("id")
+        if not isinstance(patch_id, str) or re.fullmatch(
+            r"[a-z0-9]+(?:-[a-z0-9]+)*", patch_id
+        ) is None:
+            errors.append(f"E_INVALID_LOCAL_PATCHES: {label} has an invalid id")
+        elif patch_id in identifiers:
+            errors.append(f"E_PATCH_DUPLICATE_ID: {patch_id}")
+        else:
+            identifiers.add(patch_id)
+
+        if not _issue_url(entry.get("issue"), LOCAL_REPOSITORY):
+            errors.append(f"E_INVALID_LOCAL_PATCHES: {label} must link a local issue")
+
+        upstream = entry.get("upstream")
+        if not isinstance(upstream, dict):
+            errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream must be an object")
+        else:
+            if set(upstream) - {"issue", "commit"}:
+                errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream has unexpected fields")
+            if not _issue_url(upstream.get("issue"), PARENT_REPOSITORY):
+                errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream must link a parent issue")
+            if "commit" in upstream and (
+                not isinstance(upstream["commit"], str)
+                or SHA.fullmatch(upstream["commit"]) is None
+            ):
+                errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream.commit must be a full lowercase SHA")
+
+        if not isinstance(entry.get("reason"), str) or not entry["reason"].strip():
+            errors.append(f"E_INVALID_LOCAL_PATCHES: {label} must have a reason")
+
+        patch_name = entry.get("patch")
+        if not isinstance(patch_name, str):
+            errors.append(f"E_PATCH_MISSING: {patch_id or label}: {patch_name}")
+            continue
+        relative = PurePosixPath(patch_name)
+        if (
+            relative.is_absolute()
+            or "\\" in patch_name
+            or str(relative) != patch_name
+            or ".." in relative.parts
+            or not patch_name.startswith(f"{LOCAL_PATCH_ROOT}/")
+            or relative.suffix != ".patch"
+        ):
+            errors.append(f"E_INVALID_LOCAL_PATCHES: {label} has an unsafe patch path: {patch_name}")
+            continue
+
+        referenced.append(patch_name)
+        candidate = root.joinpath(*relative.parts)
+        resolved = candidate.resolve()
+        if not patch_root_is_safe or resolved != candidate or not resolved.is_relative_to(patch_root):
+            errors.append(
+                f"E_INVALID_LOCAL_PATCHES: {label} patch path uses a symlink or escapes the patch directory"
+            )
+        elif candidate.is_symlink() or not candidate.is_file():
+            errors.append(f"E_PATCH_MISSING: {patch_id or label}: {patch_name}")
+
+    seen: set[str] = set()
+    for patch_name in referenced:
+        if patch_name in seen:
+            errors.append(f"E_PATCH_DUPLICATE_REFERENCE: {patch_name}")
+        seen.add(patch_name)
+
+    patch_files = {
+        path.relative_to(root).as_posix()
+        for path in patch_directory.rglob("*.patch")
+        if path.is_file() or path.is_symlink()
+    } if patch_root_is_safe and patch_directory.is_dir() else set()
+    for orphan in sorted(patch_files - set(referenced)):
+        errors.append(f"E_PATCH_ORPHANED: {orphan}")
+    return errors
+
+
+def local_patch_records(
+    contract: dict[str, Any], repository_root: Path | None = None
+) -> list[dict[str, str]]:
+    root = ROOT if repository_root is None else repository_root
+    errors = validate_local_patch_registry(contract, root)
+    if errors:
+        raise TransformError(errors[0])
+    return [
+        {"id": patch["id"], "sha256": sha256(root / patch["patch"])}
+        for patch in contract.get("local_patches", [])
+    ]
+
+
+def _patch_paths(patch_path: Path, source_root: Path, patch_id: str) -> list[str]:
+    result = subprocess.run(
+        ["git", "apply", "--no-index", "--numstat", "-z", str(patch_path)],
+        cwd=source_root,
+        capture_output=True,
+    )
+    if result.returncode:
+        detail = (result.stderr or result.stdout).decode("utf-8", errors="replace").strip()
+        raise TransformError(f"E_PATCH_DOES_NOT_APPLY: {patch_id}: {detail or patch_path}")
+
+    fields = result.stdout.split(b"\0")
+    paths: list[str] = []
+    index = 0
+    while index < len(fields):
+        record = fields[index]
+        index += 1
+        if not record:
+            continue
+        parts = record.split(b"\t", 2)
+        if len(parts) != 3:
+            raise TransformError(f"E_PATCH_DOES_NOT_APPLY: {patch_id}: invalid numstat output")
+        encoded_paths = [parts[2]] if parts[2] else fields[index:index + 2]
+        if not parts[2]:
+            index += 2
+        for encoded_path in encoded_paths:
+            try:
+                path = encoded_path.decode("utf-8")
+            except UnicodeDecodeError as error:
+                raise TransformError(
+                    f"E_PATCH_DOES_NOT_APPLY: {patch_id}: patch path is not UTF-8"
+                ) from error
+            relative = PurePosixPath(path)
+            if relative.is_absolute() or ".." in relative.parts or not path:
+                raise TransformError(f"E_PATCH_DOES_NOT_APPLY: {patch_id}: unsafe path {path!r}")
+            paths.append(path)
+    if not paths:
+        raise TransformError(f"E_PATCH_DOES_NOT_APPLY: {patch_id}: patch contains no file changes")
+    return paths
+
+
+def apply_local_patches(
+    source_root: Path,
+    temporary_root: Path,
+    contract: dict[str, Any],
+    repository_root: Path | None = None,
+) -> tuple[Path, list[dict[str, str]]]:
+    root = ROOT if repository_root is None else repository_root
+    errors = validate_local_patch_registry(contract, root)
+    if errors:
+        raise TransformError(errors[0])
+    entries = contract.get("local_patches", [])
+    if not entries:
+        return source_root, []
+
+    patched_root = temporary_root / "patched-source"
+    shutil.copytree(source_root, patched_root)
+    records: list[dict[str, str]] = []
+    for entry in entries:
+        patch_path = root / entry["patch"]
+        paths = _patch_paths(patch_path, source_root, entry["id"])
+        for path in paths:
+            if any(
+                rule.get("kind") == "ignore" and _matches(path, rule.get("match", []))
+                for rule in contract.get("rules", [])
+            ):
+                raise TransformError(f"E_PATCH_IGNORED_PATH: {entry['id']}: {path}")
+
+        reverse = subprocess.run(
+            ["git", "apply", "--no-index", "--reverse", "--check", str(patch_path)],
+            cwd=source_root,
+            capture_output=True,
+        )
+        if reverse.returncode == 0:
+            raise TransformError(f"E_PATCH_ALREADY_UPSTREAM: {entry['id']}: {', '.join(paths)}")
+
+        check = subprocess.run(
+            ["git", "apply", "--no-index", "--check", str(patch_path)],
+            cwd=patched_root,
+            capture_output=True,
+        )
+        if check.returncode:
+            detail = (check.stderr or check.stdout).decode("utf-8", errors="replace").strip()
+            raise TransformError(
+                f"E_PATCH_DOES_NOT_APPLY: {entry['id']}: {', '.join(paths)}: {detail}"
+            )
+        applied = subprocess.run(
+            ["git", "apply", "--no-index", str(patch_path)],
+            cwd=patched_root,
+            capture_output=True,
+        )
+        if applied.returncode:
+            detail = (applied.stderr or applied.stdout).decode("utf-8", errors="replace").strip()
+            raise TransformError(
+                f"E_PATCH_DOES_NOT_APPLY: {entry['id']}: {', '.join(paths)}: {detail}"
+            )
+        records.append({"id": entry["id"], "sha256": sha256(patch_path)})
+    return patched_root, records
 
 
 def _expand(value: Any, variables: dict[str, str]) -> Any:
@@ -308,8 +537,12 @@ def build(
     current = file_hashes(target)
 
     with tempfile.TemporaryDirectory(prefix="copilot-port-", dir=target.parent) as temp:
-        stage = Path(temp) / "plugin"
-        generated = render(upstream_root, stage, contract, variables)
+        temporary_root = Path(temp)
+        source_root, patch_records = apply_local_patches(
+            upstream_root, temporary_root, contract, ROOT
+        )
+        stage = temporary_root / "plugin"
+        generated = render(source_root, stage, contract, variables)
         report = reconcile(previous, current, generated)
         print("Reconciliation report (before write):")
         for status, path in report:
@@ -347,6 +580,8 @@ def build(
                 for name in sorted(set(generated) | set(output_hashes))
             },
         }
+        if patch_records:
+            next_manifest["local_patches"] = patch_records
         _write_output(target, stage)
         BUILD_MANIFEST.write_text(json.dumps(next_manifest, indent=2) + "\n", encoding="utf-8")
 

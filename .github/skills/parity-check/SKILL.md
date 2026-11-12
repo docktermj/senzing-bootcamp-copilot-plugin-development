@@ -13,12 +13,16 @@ writes to the parent and does not run the transform.
 1. Read `PARENT_VERSION` and `PARENT_COMMIT`. Resolve that exact parent tag and prove the commit
    matches. If the tag or commit cannot be verified, stop with the evidence.
 2. Compare the generated plugin with the pinned tag, including every source file and both
-   invariant registers. Distinguish a local Copilot adaptation from a real parity defect.
+   invariant registers. Distinguish a local Copilot adaptation from a real parity defect. A
+   delta fully explained by a registered `local_patches` entry is a **declared local fix**, not a
+   new defect to file.
 3. For every actionable delta, search this repository's issues for an existing report. Update an
    existing issue rather than filing a duplicate; otherwise file a self-contained local issue with
    the source tag, affected paths, expected parent behavior, Copilot behavior, and proposed owner.
-4. Route curriculum, Senzing facts, or parent-owned behavior to `escalate-to-parent`; do not fix
-   those defects in the child.
+4. Route curriculum, Senzing facts, or parent-owned behavior to `escalate-to-parent`. A confirmed
+   parent fix may also be backported for immediate Copilot delivery as a registered local patch;
+   the escalation remains required, and the patch must be retired when a pinned parent tag
+   contains it.
 5. For an escalated issue, require the parent issue to be completed, the local issue to carry
    `awaiting-parity`, both issue bodies to cross-reference each other, and the fix commit to be
    an ancestor of the target parent tag. Confirm the development and public plugin trees match

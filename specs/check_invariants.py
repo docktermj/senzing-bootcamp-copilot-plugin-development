@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools/bootcamp-transform"))
+import transform
+
 LEDGER = ROOT / "specs/INVARIANTS.md"
 text = LEDGER.read_text(encoding="utf-8")
 definitions = re.findall(r"(?m)^- \*\*CPINV-(\d{3})\*\* — (.+)$", text)
@@ -30,6 +34,11 @@ if len(all_supersession_mentions) != len(superseded) + len(supersedes):
     errors.append("supersession markers must use only the exact two-bullet R12 syntax")
 if bool(superseded) != bool(supersedes) or len(superseded) != len(supersedes):
     errors.append("each supersession requires both R12 bullets")
+try:
+    contract = transform.load_json_yaml(transform.CONTRACT)
+    errors.extend(transform.validate_local_patch_registry(contract, ROOT))
+except transform.TransformError as error:
+    errors.append(f"local patch contract is invalid: {error}")
 if errors:
     print("Invariant register failed:")
     for error in errors:
