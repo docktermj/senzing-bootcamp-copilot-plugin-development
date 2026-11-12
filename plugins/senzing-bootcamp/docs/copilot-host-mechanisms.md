@@ -31,9 +31,15 @@ measures, not a confirmed root-cause fix or a guarantee against recurrence.
 3. **Retry once** if the call fails. Do not loop.
 4. **Separate tool exposure from endpoint reachability.** An endpoint that answers direct
    requests does not prove the tools are exposed in the conversation. In Copilot CLI,
-   `/mcp show SERVER-NAME` (or `copilot mcp get SERVER-NAME`) shows a server's status and
-   tools; project-level servers load only after folder trust, and a disabled server is not
-   used. In VS Code, a configuration is not proof of use: complete a tool call to verify.
+   `/mcp list` shows live server status and `/mcp get <server-name>` opens its details and
+   tools. The shell commands `copilot mcp list` and `copilot mcp get <name>` show
+   configuration, not live status. Project-level servers load only after folder trust, and
+   a disabled server is not used. In VS Code, a configuration is not proof of use: complete
+   a tool call to verify.
+   The documented interactive `/mcp reload` command rereads configuration and restarts
+   servers, but is a user action; current Copilot CLI documentation does not describe a
+   plugin-callable reconnect/rebind API. A reload alone is not proof of recovery; verify
+   with a normal `get_capabilities` call.
 5. **Preserve workflow state.** Do not change the connection configuration, and resume at the
    exact step without repeating completed work.
 6. **After one failed retry, stop and tell the Bootcamper** what was checked. Report a
