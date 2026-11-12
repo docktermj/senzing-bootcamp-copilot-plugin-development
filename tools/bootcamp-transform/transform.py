@@ -7,6 +7,7 @@ import argparse
 import fnmatch
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -211,10 +212,13 @@ def local_patch_records(
     ]
 
 
-def _patch_paths(patch_path: Path, source_root: Path, patch_id: str) -> list[str]:
+def _patch_paths(
+    patch_path: Path, source_root: Path, patch_id: str, git_env: dict[str, str]
+) -> list[str]:
     result = subprocess.run(
         ["git", "apply", "--no-index", "--numstat", "-z", str(patch_path)],
         cwd=source_root,
+        env=git_env,
         capture_output=True,
     )
     if result.returncode:
@@ -265,12 +269,16 @@ def apply_local_patches(
     if not entries:
         return source_root, []
 
+    original_root = temporary_root / "upstream-source"
+    shutil.copytree(source_root, original_root)
     patched_root = temporary_root / "patched-source"
-    shutil.copytree(source_root, patched_root)
+    shutil.copytree(original_root, patched_root)
+    git_env = os.environ.copy()
+    git_env["GIT_CEILING_DIRECTORIES"] = str(temporary_root)
     records: list[dict[str, str]] = []
     for entry in entries:
         patch_path = root / entry["patch"]
-        paths = _patch_paths(patch_path, source_root, entry["id"])
+        paths = _patch_paths(patch_path, original_root, entry["id"], git_env)
         for path in paths:
             if any(
                 rule.get("kind") == "ignore" and _matches(path, rule.get("match", []))
@@ -280,7 +288,8 @@ def apply_local_patches(
 
         reverse = subprocess.run(
             ["git", "apply", "--no-index", "--reverse", "--check", str(patch_path)],
-            cwd=source_root,
+            cwd=original_root,
+            env=git_env,
             capture_output=True,
         )
         if reverse.returncode == 0:
@@ -289,6 +298,7 @@ def apply_local_patches(
         check = subprocess.run(
             ["git", "apply", "--no-index", "--check", str(patch_path)],
             cwd=patched_root,
+            env=git_env,
             capture_output=True,
         )
         if check.returncode:
@@ -299,6 +309,7 @@ def apply_local_patches(
         applied = subprocess.run(
             ["git", "apply", "--no-index", str(patch_path)],
             cwd=patched_root,
+            env=git_env,
             capture_output=True,
         )
         if applied.returncode:

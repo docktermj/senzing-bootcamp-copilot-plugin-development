@@ -1180,7 +1180,7 @@ Do not ship a patched copy of `sz_verbatim_check.py`: it is delivered by the MCP
 arrives from upstream and a fork would mask it (INV-080). The numeric case is the worked example —
 reported 2026-07-28, fixed in 1.32.2 — and a fork would still be carrying the workaround today.
 
-**One mechanism, three known reachings — recognize the fourth on sight rather than filing it as a
+**One mechanism, three known routes — recognize the fourth on sight rather than filing it as a
 discovery.** `sz_verbatim_check.py` harvests the allowed set from source **values**, and every
 entry in this block is that one scope limit reached by a different route:
 

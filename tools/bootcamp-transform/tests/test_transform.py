@@ -211,6 +211,69 @@ class LocalPatchTests(unittest.TestCase):
                 [{"id": "sample-patch", "sha256": hashlib.sha256(patch_path.read_bytes()).hexdigest()}],
             )
 
+    def test_registered_routes_patch_preserves_pinned_count_after_render(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "repo"
+            source = Path(temp) / "source"
+            source.mkdir()
+            target = source / "skills/module-05-data-quality-mapping/phase2-data-mapping.md"
+            target.parent.mkdir(parents=True)
+            target.write_text(
+                "**One mechanism, three known reachings — recognize the fourth on sight rather than filing it as a\n"
+                "discovery.** `sz_verbatim_check.py` harvests the allowed set from source **values**, and every\n"
+                "entry in this block is that one scope limit reached by a different route:\n"
+                "\n"
+                "| The emitted value is derived from… | Where it is documented here |\n"
+                "|---|---|\n"
+                "| row 1 |\n"
+                "| row 2 |\n"
+                "| row 3 |\n",
+                encoding="utf-8",
+            )
+            patch_text = (
+                transform.ROOT
+                / "tools/bootcamp-transform/patches/module-05-routes-wording.patch"
+            ).read_text(encoding="utf-8")
+            contract, _ = self._fixture(root, source, patch_text)
+            entry = contract["local_patches"][0]
+            entry.update(
+                {
+                    "id": "module-05-routes-wording",
+                    "issue": (
+                        "https://github.com/docktermj/"
+                        "senzing-bootcamp-copilot-plugin-development/issues/11"
+                    ),
+                    "upstream": {
+                        "issue": (
+                            "https://github.com/docktermj/"
+                            "senzing-bootcamp-claude-plugin-development/issues/881"
+                        ),
+                        "commit": "9466b0a36e98d405ceecb95af48fd55e5bbbf34b",
+                    },
+                    "reason": "Preserve the pinned table and count while correcting the wording.",
+                }
+            )
+            contract["substitutions"] = transform.load_json_yaml(
+                transform.CONTRACT
+            )["substitutions"]
+
+            with tempfile.TemporaryDirectory(dir=transform.ROOT / "plugins") as scratch:
+                patched, _ = transform.apply_local_patches(
+                    source, Path(scratch), contract, root
+                )
+                output = Path(scratch) / "plugin"
+                transform.render(patched, output, contract, {})
+                generated = (
+                    output / "skills/module-05-data-quality-mapping/phase2-data-mapping.md"
+                ).read_text(encoding="utf-8")
+
+            self.assertIn(
+                "three known routes — recognize the fourth on sight",
+                generated,
+            )
+            self.assertNotIn("reachings", generated.lower())
+            self.assertEqual(generated.count("| row "), 3)
+
     def test_local_patches_apply_in_contract_order(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "repo"
