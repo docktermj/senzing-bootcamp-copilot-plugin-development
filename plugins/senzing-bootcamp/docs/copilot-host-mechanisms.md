@@ -18,6 +18,21 @@ repository's `docs/test-checklist.md`.
 | What if Senzing MCP tools are missing from the conversation? | **Recovery procedure; deferred-tool discovery is observed, not documented.** See [Senzing MCP tools unavailable](#senzing-mcp-tools-unavailable). |
 | How is pre-compaction handled? | **Not wired in this build.** Copilot CLI documents a `preCompact` event, but this plugin does not configure it. The parent’s pre-compaction recap fold remains an advisory instruction; the bootcamper-facing recap checkpoint is the manual recovery path. |
 
+## Copilot CLI Stop-hook visibility check
+
+The documented [`agentStop` contract](https://docs.github.com/en/copilot/reference/hooks-reference#agentstop--subagentstop-decision-control)
+uses `reason` as the prompt for a continuation. In an isolated Copilot CLI 1.0.109 interactive
+check, the terminal also rendered the plugin's Stop-hook reason directly after the assistant's
+message. This identifies the observed turn-check text as the hook reason, not an assistant echo
+or a separate host diagnostic. Keep this reason user-facing; do not label it internal or instruct
+the assistant to conceal it. The current hook asks for the module's prescribed closing question
+in user-facing language and requires an actual question mark after its single 👉 marker.
+
+The prompt-mode check did not display the reason in CLI output, so this behavior is specific to
+the tested interactive session. These synthetic checks reproduce the hook text, but do not
+establish that every client or any different, unreported message has the same source. See the
+evidence in `docs/test-records/0.6.1.md`.
+
 ## Senzing MCP tools unavailable
 
 Use this when Senzing MCP tools cannot be called in the conversation. These are recovery

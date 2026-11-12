@@ -201,6 +201,18 @@ class CopilotHookTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout, "")
 
+    def test_agent_stop_blocks_arrow_marker_without_question(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            (workspace / "config").mkdir()
+            (workspace / "config/bootcamp_progress.json").write_text("{}")
+            result = self.run_hook("agent-stop", workspace, {
+                "stop_hook_active": False,
+                "last_assistant_message": "👉 **The step is complete.**",
+            })
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["decision"], "block")
+
     def test_agent_stop_allows_closing_question_with_numbered_options(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             workspace = Path(temp)
@@ -235,9 +247,9 @@ class CopilotHookTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             response = json.loads(result.stdout)
             self.assertEqual(response["decision"], "block")
-            self.assertIn("end your turn silently", response["reason"])
+            self.assertIn("do not repeat it", response["reason"])
 
-    def test_agent_stop_reason_is_internal_and_never_asks_to_repeat(self) -> None:
+    def test_agent_stop_reason_is_user_facing_and_never_asks_to_repeat(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             workspace = Path(temp)
             (workspace / "config").mkdir()
@@ -247,9 +259,9 @@ class CopilotHookTests(unittest.TestCase):
                 "last_assistant_message": "Working on it.",
             })
             reason = json.loads(result.stdout)["reason"]
-            self.assertIn("never mention it to the Bootcamper", reason)
-            self.assertIn("Never repeat a question already asked", reason)
-            self.assertNotIn("must end with", reason)
+            self.assertIn("module's prescribed closing question", reason)
+            self.assertIn("do not repeat it", reason)
+            self.assertNotIn("internal", reason.lower())
 
     def test_agent_stop_blocks_duplicate_closing_markers(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

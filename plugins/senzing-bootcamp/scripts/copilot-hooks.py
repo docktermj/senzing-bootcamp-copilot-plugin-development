@@ -201,6 +201,8 @@ def _has_clean_closing_question(message: str) -> bool:
     if sum(line.count("👉") for line in lines) != 1:
         return False
     question_line = next(index for index, line in enumerate(lines) if "👉" in line)
+    if "?" not in lines[question_line].split("👉", 1)[1]:
+        return False
     trailing = lines[question_line + 1:]
     nonempty = [line for line in trailing if line.strip()]
     if not nonempty:
@@ -246,12 +248,8 @@ def agent_stop() -> None:
     print(json.dumps({
         "decision": "block",
         "reason": (
-            "Bootcamp turn check (internal; never mention it to the Bootcamper). Your last "
-            "message does not end with exactly one 👉 closing question followed only by numbered "
-            "options. If that question was already asked in your last message, add nothing: end "
-            "your turn silently. Otherwise, only if you have finished a bootcamp step and are "
-            "yielding, ask its prescribed question once. Never repeat a question already asked. "
-            "Add nothing mid-step or after bootcamp completion."
+            "Please finish with the module's prescribed closing question and any numbered "
+            "options. If it was already asked, do not repeat it."
         ),
     }, ensure_ascii=False))
 

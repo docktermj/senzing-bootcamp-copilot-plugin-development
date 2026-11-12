@@ -13,8 +13,8 @@
       "output": "65a55b538a4fbf37f9c6147b8d806328656f9e36fa51c1fd96fc029b517871c4"
     },
     "docs/copilot-host-mechanisms.md": {
-      "generated": "192c25ddad3a74d5176027357a17706236ac926fdd4e98bd4646926a7bd2f49e",
-      "output": "192c25ddad3a74d5176027357a17706236ac926fdd4e98bd4646926a7bd2f49e"
+      "generated": "f63896782eff286506f88b7f8f11b601ac8856b93daa8076fdb97cb65960bdda",
+      "output": "f63896782eff286506f88b7f8f11b601ac8856b93daa8076fdb97cb65960bdda"
     },
     "docs/copilot-interaction-contract.md": {
       "generated": "7408988ed762163df2b7908aa393aa58d0072c9e06de05d598b383f9de04b7ec",
@@ -109,8 +109,8 @@
       "output": "990eb63c93aaa98af32948c89417948376c613c85852f70423c0656ba87773c7"
     },
     "scripts/copilot-hooks.py": {
-      "generated": "e48f4c1d276f4f93af77daaa2f824392c362aa0926b98a713d499d62217f7c16",
-      "output": "e48f4c1d276f4f93af77daaa2f824392c362aa0926b98a713d499d62217f7c16"
+      "generated": "926b8b08d4dd8c34587247584e8e215ef3037abdb6873febe8ecc9a55516a9fe",
+      "output": "926b8b08d4dd8c34587247584e8e215ef3037abdb6873febe8ecc9a55516a9fe"
     },
     "scripts/docker_lifecycle.py": {
       "generated": "f59f3f81e6738e5aab5e4002ab7478515207b3699775ffcba8d87d88d49f73a9",
