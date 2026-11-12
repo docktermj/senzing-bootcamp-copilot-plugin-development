@@ -293,8 +293,8 @@
       "output": "d10ea4e029beb62a18fe8f7672563f4a71c5c1993072cfc049007dde8e1a5473"
     },
     "skills/module-05-data-quality-mapping/phase2-data-mapping.md": {
-      "generated": "e9fbeeb956349aefaa9e0a5aa465bf5ff0586e0df2775fad4204e2d36ef05b65",
-      "output": "e9fbeeb956349aefaa9e0a5aa465bf5ff0586e0df2775fad4204e2d36ef05b65"
+      "generated": "2c478c8d80f190124745d8632b2f6e24f964b1acf49be8460165dcb7149e0e9e",
+      "output": "2c478c8d80f190124745d8632b2f6e24f964b1acf49be8460165dcb7149e0e9e"
     },
     "skills/module-05-data-quality-mapping/phase3-test-load.md": {
       "generated": "24b7e14f11c9094f4806968a4d4708fb886ebc52b21c7e64a7e5ffc826e9c24e",
@@ -336,5 +336,11 @@
       "generated": "22d10bb89d0a0ad89ec07d522543fcf141b656e40e153d0b6f5892d7ab2c2c74",
       "output": "22d10bb89d0a0ad89ec07d522543fcf141b656e40e153d0b6f5892d7ab2c2c74"
     }
-  }
+  },
+  "local_patches": [
+    {
+      "id": "module-05-routes-wording",
+      "sha256": "5d94d812e63ab3f6905528da2f0a2cd6c55af615dfd5b20d8a99ea5ea2b64853"
+    }
+  ]
 }

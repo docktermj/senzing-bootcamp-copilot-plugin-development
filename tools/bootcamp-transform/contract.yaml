@@ -108,7 +108,18 @@
       "reason": "Claude event names and payloads are not Copilot hooks; a host-specific hook map is generated."
     }
   ],
-  "local_patches": [],
+  "local_patches": [
+    {
+      "id": "module-05-routes-wording",
+      "issue": "https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development/issues/11",
+      "patch": "tools/bootcamp-transform/patches/module-05-routes-wording.patch",
+      "upstream": {
+        "issue": "https://github.com/docktermj/senzing-bootcamp-claude-plugin-development/issues/881",
+        "commit": "9466b0a36e98d405ceecb95af48fd55e5bbbf34b"
+      },
+      "reason": "Backport the parent-approved wording correction while preserving the pinned 0.6.1 table and count."
+    }
+  ],
   "substitutions": [
     {"old": "Claude Code", "new": "GitHub Copilot"},
     {"old": "Claude's", "new": "GitHub Copilot's"},

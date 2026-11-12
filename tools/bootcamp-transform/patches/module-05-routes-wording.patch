@@ -1,0 +1,8 @@
+diff --git a/skills/module-05-data-quality-mapping/phase2-data-mapping.md b/skills/module-05-data-quality-mapping/phase2-data-mapping.md
+--- a/skills/module-05-data-quality-mapping/phase2-data-mapping.md
++++ b/skills/module-05-data-quality-mapping/phase2-data-mapping.md
+@@ -1183,3 +1183,3 @@
+-**One mechanism, three known reachings — recognize the fourth on sight rather than filing it as a
++**One mechanism, three known routes — recognize the fourth on sight rather than filing it as a
+ discovery.** `sz_verbatim_check.py` harvests the allowed set from source **values**, and every
+ entry in this block is that one scope limit reached by a different route:
