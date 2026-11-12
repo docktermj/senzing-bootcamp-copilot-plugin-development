@@ -101,8 +101,8 @@
       "output": "a2063c02472ff00dcb6d706768305d5292a4de27a629c3072d73ab378250b122"
     },
     "scripts/capture_screenshots.py": {
-      "generated": "5e195bb13eae90a94e43e4d629b9d61cbfa1084dabdedc2e0b3d2a07e52a0aec",
-      "output": "5e195bb13eae90a94e43e4d629b9d61cbfa1084dabdedc2e0b3d2a07e52a0aec"
+      "generated": "7a7e24c715514b142ae95bb3d7ce61fcb3b451f72b2f3c3b619c6cf72ea1fb20",
+      "output": "7a7e24c715514b142ae95bb3d7ce61fcb3b451f72b2f3c3b619c6cf72ea1fb20"
     },
     "scripts/checkpoint-tick.py": {
       "generated": "990eb63c93aaa98af32948c89417948376c613c85852f70423c0656ba87773c7",
@@ -161,8 +161,8 @@
       "output": "b98d7261b58f6b14eb99f08271f1c9ac133d97c8617021ab701a176b1559c9de"
     },
     "scripts/senzing_viz_server.py": {
-      "generated": "ccc54b63955fe884d2ff1bf64cd2a1b15977b7f15991a80f78b06030bdf94873",
-      "output": "ccc54b63955fe884d2ff1bf64cd2a1b15977b7f15991a80f78b06030bdf94873"
+      "generated": "48edc3f35747f9194ad5f8cbc489b9cb7431782efe764056762c9af736e55d75",
+      "output": "48edc3f35747f9194ad5f8cbc489b9cb7431782efe764056762c9af736e55d75"
     },
     "scripts/session-end.py": {
       "generated": "ddc06a54ffbd33ae53f580546242147169165613260b53f64dd93359edfeea19",
@@ -277,8 +277,8 @@
       "output": "7c525a8bb8d2ac744f7f79621f711cbb4e208bfdc7a232b3925043f69fed373f"
     },
     "skills/module-03b-truthset-visualization/visualization-api-reference.md": {
-      "generated": "c26bdf3ec57b9285067c68adc87b1e4b67e97a240a4b4faf4db2733ce5793f98",
-      "output": "c26bdf3ec57b9285067c68adc87b1e4b67e97a240a4b4faf4db2733ce5793f98"
+      "generated": "e14d79e4f54933932289c63b8bb34d7244d11fa9ac3b468d948e51f6f4b1a91c",
+      "output": "e14d79e4f54933932289c63b8bb34d7244d11fa9ac3b468d948e51f6f4b1a91c"
     },
     "skills/module-04-data-collection/SKILL.md": {
       "generated": "761d18c2bca6aeb4cf6e9aea87a8439d6dade8ab72663e39451f38f2fc3ed802",
@@ -325,8 +325,8 @@
       "output": "34c501122e4355fcf54c324c999f20f95e6dff79fa01d88c7c430bc5103108ab"
     },
     "skills/module-07-query-visualize-discover/phase1-query-visualize.md": {
-      "generated": "e95c40e9e1cf087fda3f342dfe7de8cef1ee0d47d36f14ee72e3b439be5b4252",
-      "output": "e95c40e9e1cf087fda3f342dfe7de8cef1ee0d47d36f14ee72e3b439be5b4252"
+      "generated": "5e1d030e747b8590bba3d0c54eea03034aacf87d6fd6e4a1ab0fa8e2e49a55bf",
+      "output": "5e1d030e747b8590bba3d0c54eea03034aacf87d6fd6e4a1ab0fa8e2e49a55bf"
     },
     "skills/module-07-query-visualize-discover/phase2-discover.md": {
       "generated": "38342f7a6eb2b850b827ed2077058e2f7f1507e4786b65e31f9a12276e9f537d",
@@ -341,6 +341,10 @@
     {
       "id": "module-05-routes-wording",
       "sha256": "5d94d812e63ab3f6905528da2f0a2cd6c55af615dfd5b20d8a99ea5ea2b64853"
+    },
+    {
+      "id": "module-07-visualization-scale",
+      "sha256": "a7714ecf26c2a83b2d8f2add53c756caddb632e52f914ee20d50689d8c5ea958"
     }
   ]
 }

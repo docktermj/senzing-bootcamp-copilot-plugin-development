@@ -818,6 +818,8 @@ of the Truth Set. It MUST:
   here, and never pass "the Senzing Truth Set": this app points at the Bootcamper's data, the
   snapshot is permanent, and a Truth Set label on their own data is a false claim in a keepsake
   (INV-172). The contract's "Snapshot" section is the statement of record.
+  When the graph payload is capped, run [the scale check](#snapshot-scale-check) on the snapshot
+  first, and capture only once it has passed, or has been recorded as skipped or not exercised.
   After generating it, capture screenshots for the recap per
   `../bootcamp-onboarding/module-completion.md` → "Capturing visualization screenshots" (skip
   silently with no headless capability, otherwise embed **every** captured tab in this module's
@@ -863,6 +865,46 @@ of the Truth Set. It MUST:
   the recap prose that describes the change (see
   `../module-03b-truthset-visualization/phase1-visualization.md` → 2.4b, where the same omission
   shipped an eight-tab snapshot beside six-tab prose).
+
+<a id="snapshot-scale-check"></a>
+⛔ **(INV-129) When the graph is capped, check the snapshot at scale before capturing its screenshots.**
+The Truth Set never reaches the graph cap, so these checks have only this run to catch what breaks
+at the Bootcamper's scale. The bundled capture helper runs them in a verification mode that
+captures nothing, against `docs/visualizations/results_visualization.html`:
+
+```bash
+python3 "${PLUGIN_ROOT}/scripts/capture_screenshots.py" \
+  --html docs/visualizations/results_visualization.html --verify-scale
+```
+
+Guide-run in the guide's POSIX shell (Git Bash on Windows); unverified on Windows: no test runs it
+there ([guide-run blocks](../bootcamp-onboarding/ground-rules.md#guide-run-blocks)).
+
+It opens the snapshot in headless Chrome with the graph pane 480 px wide, lets the interactive
+layout reach its first settle, and prints one line per check:
+
+- `records_beyond_cap`: an entity the "Show all merged entities" browse offers outside the graph
+  opens its records, not "not found", as required by the offline Records contract.
+- `fit_in_pane`: every drawn node, with its label while labels are drawn, is inside the pane after
+  the first fit, in both modes.
+- `edge_colors`: relationship-mode edges paint their relationship-type colors, and an assigned node
+  outline paints as assigned.
+
+The rules behind the last two are stated once in
+`../module-03b-truthset-visualization/visualization-api-reference.md` → "Graph rendering — labels,
+scale, and legends" (the initial fit and the stroke precedence; INV-300). The helper reads only what
+that contract fixes, so a snapshot from a Java or C# server is checked the same way. Act on its
+exit code:
+
+- **0**: passed, or the graph is not capped, which it says; capture as above.
+- **1**: a check failed. Fix the server against the rule the failing line names, rebuild the
+  snapshot and run the check again, as the snapshot check above does; capture only once it passes.
+- **2**: skipped, no headless browser. Record `scale_check` as skipped in `m7_visualizations`,
+  capture as above, and name the skipped check at closing (INV-163); never report it as passed.
+- **3**: a check could not be exercised, and its line says why. Record which, and name it at
+  closing as for a skipped check (INV-163, INV-265).
+
+The check is agent-side and asks the Bootcamper nothing (INV-012).
 
 ⛔ **The server stays running — screenshot capture must not stop it.** The API probes and the
 screenshot pass above are agent-side verification, not the end of the interaction. Follow the

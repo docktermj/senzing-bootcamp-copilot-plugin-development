@@ -184,6 +184,47 @@ class LocalPatchTests(unittest.TestCase):
             self.assertTrue(any(error.startswith("E_PATCH_DUPLICATE_REFERENCE") for error in errors))
             self.assertTrue(any("must link a local issue" in error for error in errors))
 
+    def test_patch_registry_accepts_multiple_upstream_commits(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            patch_path = root / transform.LOCAL_PATCH_ROOT / "sample.patch"
+            patch_path.parent.mkdir(parents=True)
+            patch_path.write_text(
+                self._replace_patch("file.md", "old", "new"), encoding="utf-8"
+            )
+            entry = self._entry()
+            entry["upstream"] = {
+                "issue": self.parent_issue,
+                "commits": [self.commit, "b" * 40],
+            }
+
+            self.assertEqual(
+                [],
+                transform.validate_local_patch_registry(
+                    {"local_patches": [entry]}, root
+                ),
+            )
+
+    def test_patch_registry_rejects_malformed_upstream_commit_lists(self) -> None:
+        invalid_lists = ([], ["a" * 39], ["a" * 40, "a" * 40])
+        for commits in invalid_lists:
+            with self.subTest(commits=commits), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                patch_path = root / transform.LOCAL_PATCH_ROOT / "sample.patch"
+                patch_path.parent.mkdir(parents=True)
+                patch_path.write_text(
+                    self._replace_patch("file.md", "old", "new"), encoding="utf-8"
+                )
+                entry = self._entry()
+                entry["upstream"] = {"issue": self.parent_issue, "commits": commits}
+
+                errors = transform.validate_local_patch_registry(
+                    {"local_patches": [entry]}, root
+                )
+                self.assertTrue(
+                    any("upstream.commits" in error for error in errors), errors
+                )
+
     def test_local_patch_applies_before_substitutions_and_is_manifested(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "repo"
