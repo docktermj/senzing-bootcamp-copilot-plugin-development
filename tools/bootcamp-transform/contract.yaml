@@ -108,6 +108,7 @@
       "reason": "Claude event names and payloads are not Copilot hooks; a host-specific hook map is generated."
     }
   ],
+  "local_patches": [],
   "substitutions": [
     {"old": "Claude Code", "new": "GitHub Copilot"},
     {"old": "Claude's", "new": "GitHub Copilot's"},

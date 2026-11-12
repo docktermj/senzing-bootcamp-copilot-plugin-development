@@ -1,8 +1,10 @@
 # Claude-to-Copilot porting framework
 
 This child transforms a tagged parent Claude plugin into a GitHub Copilot agent plugin. The
-parent owns curriculum and `INV-NNN` identifiers. The child owns only Copilot packaging,
-host mechanisms, and the compatibility decisions needed to preserve the bootcamper experience.
+parent owns curriculum and `INV-NNN` identifiers. Temporary registered local patches may
+backport parent-owned fixes that are not in a stable parent tag yet; they are removed when the
+pinned tag contains the fix. The child also owns Copilot packaging, host mechanisms, and the
+compatibility decisions needed to preserve the bootcamper experience.
 
 | Component | Canonical home | Gate |
 | --- | --- | --- |
@@ -15,6 +17,7 @@ host mechanisms, and the compatibility decisions needed to preserve the bootcamp
 | G. Recorded host tests | [`test-checklist.md`](test-checklist.md) and `test-records/` | Required manual results are recorded for every release. |
 | H. Determinism | [`.github/workflows/verify-build-determinism.yml`](../.github/workflows/verify-build-determinism.yml) | Rebuild at the pinned tag leaves no generated, provenance, or build-manifest drift. |
 | I. Governance | [Maintainer skills](../.github/skills/) and `tools/bootcamp-transform/` | Canonical operations route issues to their owner and enforce write boundaries. |
+| J. Local patches | `local_patches` in the contract and `tools/bootcamp-transform/patches/` | Each upstream backport names its local and parent issues; a tag that already contains it fails with `E_PATCH_ALREADY_UPSTREAM` until the patch is retired. |
 
 The pre-write reconciler never resolves a conflict on behalf of a maintainer. A Copilot-specific
 adaptation that cannot be expressed mechanically remains visible in the disposition register and

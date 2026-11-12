@@ -23,5 +23,8 @@ merge, commit to `main`, force-push, or select work autonomously.**
 8. When closing a parity issue, advance `PARENT_VERSION` and `PARENT_COMMIT` to the tagged parent
    release containing the fix, update both invariant evaluations, rebuild, and record evidence.
    A parent issue closing without a released tag does not satisfy parity.
+   A local-patch issue closes when its implementation PR merges; do not advance the parent pin
+   for that issue. Retire its patch during a later pin advance when the transform reports
+   `E_PATCH_ALREADY_UPSTREAM`.
 
 The operation ends with an open PR or an evidence-backed no-change outcome.
