@@ -144,15 +144,36 @@ def validate_local_patch_registry(
         if not isinstance(upstream, dict):
             errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream must be an object")
         else:
-            if set(upstream) - {"issue", "commit"}:
+            if set(upstream) - {"issue", "commit", "commits"}:
                 errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream has unexpected fields")
             if not _issue_url(upstream.get("issue"), PARENT_REPOSITORY):
                 errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream must link a parent issue")
+            if "commit" in upstream and "commits" in upstream:
+                errors.append(
+                    f"E_INVALID_LOCAL_PATCHES: {label}.upstream must use commit or commits, not both"
+                )
             if "commit" in upstream and (
                 not isinstance(upstream["commit"], str)
                 or SHA.fullmatch(upstream["commit"]) is None
             ):
                 errors.append(f"E_INVALID_LOCAL_PATCHES: {label}.upstream.commit must be a full lowercase SHA")
+            if "commits" in upstream:
+                commits = upstream["commits"]
+                if not isinstance(commits, list) or not commits:
+                    errors.append(
+                        f"E_INVALID_LOCAL_PATCHES: {label}.upstream.commits must be a non-empty list"
+                    )
+                elif any(
+                    not isinstance(commit, str) or SHA.fullmatch(commit) is None
+                    for commit in commits
+                ):
+                    errors.append(
+                        f"E_INVALID_LOCAL_PATCHES: {label}.upstream.commits must contain full lowercase SHAs"
+                    )
+                elif len(set(commits)) != len(commits):
+                    errors.append(
+                        f"E_INVALID_LOCAL_PATCHES: {label}.upstream.commits must not contain duplicate SHAs"
+                    )
 
         if not isinstance(entry.get("reason"), str) or not entry["reason"].strip():
             errors.append(f"E_INVALID_LOCAL_PATCHES: {label} must have a reason")

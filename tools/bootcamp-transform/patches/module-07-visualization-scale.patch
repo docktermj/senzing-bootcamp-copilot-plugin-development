@@ -1,0 +1,870 @@
+diff --git a/scripts/capture_screenshots.py b/scripts/capture_screenshots.py
+index 6000e03..4cca340 100644
+--- a/scripts/capture_screenshots.py
++++ b/scripts/capture_screenshots.py
+@@ -60,6 +60,12 @@ Usage::
+ On success it prints one ``<png path>\\t<tab label>`` line per capture and exits 0.
+ Exit codes: 0 = wrote at least one PNG; 2 = no headless capability available
+ (caller should skip screenshots); 1 = bad arguments.
++
++``--html <snapshot> --verify-scale`` captures nothing: it checks the snapshot's interactive
++Entity Graph at a 480px pane when the graph is capped (#883) and prints one
++``scale-check: <check>\\t<status>\\t<detail>`` line per check. Exit codes there: 0 = passed (or
++the graph is not capped), 1 = a check failed, 2 = skipped (no headless Chrome/Chromium/Edge),
++3 = a check could not be exercised. See "Scale check" below.
+ """
+ 
+ from __future__ import annotations
+@@ -1296,6 +1302,348 @@ def write_manifest(
+     return True
+ 
+ 
++# --------------------------------------------------------------------------- #
++# Scale check (#883): the snapshot's INTERACTIVE graph, checked before capture
++# --------------------------------------------------------------------------- #
++#
++# Every check above is about the capture render (`?capture=1`). A bootcamper opens the
++# snapshot itself, at whatever size their window is, and at full scale three things broke
++# there that no Truth Set capture could show (#883): the graph opened unfitted, with most of a
++# 1,500-node layout outside a narrow pane; a stylesheet rule painted every relationship edge
++# gray over the colors the renderer had written; and an entity the snapshot offered past the
++# graph cap had once answered "not found" for its records (#675). `--verify-scale` loads the
++# snapshot in headless Chrome, lets its own interactive layout run to its first settle, and
++# checks those three in the DOM, so Module 7 keeps screenshots only of a snapshot that passed.
++#
++# ⚠️ **What makes the interactive path observable here at all.** Headless virtual time does
++# not service `requestAnimationFrame`, so an animated layout advances ~5 of its ~300 ticks and
++# never reaches its own settle (INV-298) -- the reason the capture has a synchronous render.
++# The check must not use that render: it is testing what the reader gets. So the injected head
++# script routes animation frames through `setTimeout`, which virtual time DOES advance, before
++# the page's own scripts load (d3 binds `requestAnimationFrame` when it loads). The page's code
++# is otherwise untouched; its own settle signal says when the first fit has happened.
++#
++# ⚠️ **Generator-neutral by construction.** It reads only what the any-language contract
++# fixes: the `tab-graph` / `tab-probe` sections and `activate()` (INV-124), the
++# `data-graph-settled` signal (INV-298), the capped note's wording, the "Show only entities
++# with relationships" toggle, the "Show all merged entities" browse and the "Records" action
++# (visualization-api-reference.md). A Java or C# app's snapshot is checked the same way, and
++# `TheCheckerReadsAnyGeneratorsSnapshot` in the #883 test proves it on a hand-written page. One
++# exception: node LABELS are found by the reference's `node` / `node-labels` classes, which the
++# contract does not fix, so on another generator's snapshot the fit check measures every node
++# marker and no label.
++
++#: The pane width the fit is checked at. Narrow on purpose: a fit that holds at 480px holds in
++#: any wider window, and #883's reporter saw the overflow in a side-by-side pane.
++SCALE_PANE_PX = 480
++
++#: The three checks, in report order. Module 7's snapshot check names each.
++SCALE_CHECKS = ("records_beyond_cap", "fit_in_pane", "edge_colors")
++
++SCALE_PASSED = "passed"
++SCALE_FAILED = "failed"
++SCALE_NOT_EXERCISED = "not exercised"
++SCALE_SKIPPED = "skipped"
++
++#: Exit codes for `--verify-scale`. 2 matches the capture's "no headless capability".
++SCALE_EXIT_PASSED = 0
++SCALE_EXIT_FAILED = 1
++SCALE_EXIT_SKIPPED = 2
++SCALE_EXIT_NOT_EXERCISED = 3
++
++_SCALE_CHECK_RE = re.compile(r'data-sz-scale-check="([^"]*)"')
++_SCALE_VIRTUAL_TIME_MS = 180000
++
++# Injected right after `<head>`, ahead of every script the page carries.
++_SCALE_HEAD = """<script>
++(function(){
++  window.requestAnimationFrame=function(cb){return setTimeout(function(){cb(performance.now());},16);};
++  window.cancelAnimationFrame=function(id){clearTimeout(id);};
++})();
++</script>
++<style>#tab-graph{width:__PANE__px!important;max-width:__PANE__px!important;padding-left:0!important;padding-right:0!important;box-sizing:content-box!important}</style>
++"""
++
++# Injected before `</body>`. Exposes its helpers as `window.__szScale` so a test can drive one
++# scenario with the same measurements the check uses; `_SCALE_RUN` then runs the check.
++_SCALE_BODY = r"""<script>
++(function(){
++var S=window.__szScale={};
++function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
++S.sleep=sleep;
++S.until=async function(pred,ms){for(var t=0;t<=ms;t+=25){try{if(pred())return true;}catch(e){}await sleep(25);}return false;};
++S.settled=function(){return document.documentElement.getAttribute("data-graph-settled")==="1";};
++S.graphSvg=function(){var tab=document.getElementById("tab-graph");if(!tab)return null;
++  var best=null,area=0;tab.querySelectorAll("svg").forEach(function(s){var r=s.getBoundingClientRect();
++  if(r.width*r.height>area){area=r.width*r.height;best=s;}});return best;};
++function shown(el){if(!el||!el.isConnected)return false;
++  for(var e=el;e&&e.nodeType===1;e=e.parentElement){var cs=getComputedStyle(e);
++    if(cs.display==="none"||cs.visibility==="hidden")return false;}
++  var r=el.getBoundingClientRect();return r.width>0||r.height>0;}
++S.shown=shown;
++function box(r){return [Math.round(r.left),Math.round(r.top),Math.round(r.right),Math.round(r.bottom)];}
++// Every drawn node mark, and every drawn node label, inside the pane's box.
++S.fitReport=function(){var svg=S.graphSvg();
++  if(!svg)return {status:"not exercised",detail:"no graph drawn"};
++  var p=svg.getBoundingClientRect(),tol=0.5,out=[],n=0,lab=0,on=0,ol=0;
++  function inside(r){return r.left>=p.left-tol&&r.top>=p.top-tol&&r.right<=p.right+tol&&r.bottom<=p.bottom+tol;}
++  svg.querySelectorAll("circle").forEach(function(c){if(!shown(c))return;n++;
++    var r=c.getBoundingClientRect();if(!inside(r)){on++;out.push(["node",box(r)]);}});
++  svg.querySelectorAll("[class~=node-labels] text,[class~=node] text").forEach(function(t){if(!shown(t))return;lab++;
++    var r=t.getBoundingClientRect();if(!inside(r)){ol++;out.push(["label",box(r)]);}});
++  return {status:n?(out.length?"failed":"passed"):"not exercised",nodes:n,labels:lab,outside_nodes:on,outside_labels:ol,
++          pane:[Math.round(p.width),Math.round(p.height)],sample:out.slice(0,5)};};
++var probe=null;
++function norm(v){if(!probe){probe=document.createElement("div");probe.style.display="none";document.body.appendChild(probe);}
++  probe.style.color="";probe.style.color=v;return getComputedStyle(probe).color;}
++S.norm=norm;
++// A stroke the DATA set (an attribute or inline style on the mark) against the stroke the
++// browser actually paints. A stylesheet rule that overrides a presentation attribute shows
++// up here and nowhere else: the attribute itself still reads correctly.
++S.strokeReport=function(selector){var svg=S.graphSvg();var checked=0,bad=[],colors={};
++  if(!svg)return {checked:0,bad:[],colors:0};
++  svg.querySelectorAll(selector).forEach(function(el){if(!shown(el))return;
++    var want=el.style.stroke||el.getAttribute("stroke"),wantW=el.style.strokeWidth||el.getAttribute("stroke-width");
++    if(!want&&!wantW)return;checked++;var cs=getComputedStyle(el),off=false;
++    if(want){colors[norm(want)]=1;
++      if(want==="none"?cs.stroke!=="none":norm(want)!==norm(cs.stroke))off=true;}
++    if(wantW&&Math.abs(parseFloat(wantW)-parseFloat(cs.strokeWidth))>0.01)off=true;
++    if(off)bad.push([want,wantW,cs.stroke,cs.strokeWidth]);});
++  return {checked:checked,bad:bad.slice(0,5),mismatches:bad.length,colors:Object.keys(colors).length};};
++S.drawnNames=function(){var svg=S.graphSvg(),names={};
++  if(svg)svg.querySelectorAll("title").forEach(function(t){names[t.textContent.trim()]=1;});return names;};
++S.modeToggle=function(){var ins=document.querySelectorAll("#tab-graph input[type=checkbox]");
++  for(var i=0;i<ins.length;i++){var l=ins[i].closest("label");
++    if(l&&/only entities with relationships/i.test(l.textContent))return ins[i];}return null;};
++S.redraw=async function(fn,ms){var old=S.graphSvg();fn();
++  return S.until(function(){return S.graphSvg()!==old&&S.settled();},ms||60000);};
++function firstText(h){for(var c=h.firstChild;c;c=c.nextSibling){if(c.nodeType===3&&c.nodeValue.trim())return c.nodeValue.trim();}
++  return h.textContent.trim();}
++function dialogText(){var ds=document.querySelectorAll("[role=dialog],dialog[open],.modal");
++  for(var i=0;i<ds.length;i++){if(shown(ds[i]))return ds[i].textContent;}return null;}
++function closeDialog(){if(typeof closeModal==="function"){try{closeModal();return;}catch(e){}}
++  document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}));}
++// Open the Records action of entities the snapshot offers that the graph did not draw.
++S.recordsReport=async function(drawn,want){
++  if(typeof activate==="function")activate("probe");
++  else{var nb=document.getElementById("navbtn-probe");if(nb)nb.click();}
++  await sleep(300);
++  var all=Array.prototype.slice.call(document.querySelectorAll("#tab-probe button"));
++  var browse=all.filter(function(b){return /show all merged entities/i.test(b.textContent);})[0];
++  if(!browse)return {status:"not exercised",detail:"no \"Show all merged entities\" browse"};
++  browse.click();await sleep(500);
++  var known=Object.keys(drawn||{}).length>0,cands=[],offered=0;
++  document.querySelectorAll("#tab-probe button").forEach(function(b){if(b.textContent.trim()!=="Records")return;offered++;
++    var card=b.parentElement;while(card&&card.id!=="tab-probe"&&!card.querySelector("h1,h2,h3,h4,h5,h6"))card=card.parentElement;
++    var h=card&&card.querySelector("h1,h2,h3,h4,h5,h6");var name=h?firstText(h):"";
++    if(!known||!drawn[name])cands.push({b:b,name:name});});
++  var picked=cands.slice(-(want||3)),checked=[],failed=[];
++  for(var i=0;i<picked.length;i++){closeDialog();await sleep(50);picked[i].b.click();
++    var txt=null;await S.until(function(){txt=dialogText();return txt&&!/Loading/.test(txt);},5000);
++    checked.push(picked[i].name);
++    if(!txt||/not found|no such entity|No records returned/i.test(txt))failed.push([picked[i].name,(txt||"no dialog opened").slice(0,160)]);}
++  closeDialog();
++  return {status:checked.length?(failed.length?"failed":"passed"):"not exercised",
++          outside_cap_known:known,offered:offered,offered_outside_graph:cands.length,checked:checked,failed:failed,
++          detail:checked.length?"":(offered?"the merge browse offers no entity the graph left out"
++                                            :"the merge browse drew no entity with a Records action")};};
++S.stamp=function(rep){document.documentElement.setAttribute("data-sz-scale-check",JSON.stringify(rep));};
++})();
++</script>
++"""
++
++_SCALE_RUN = r"""<script>
++(async function(){
++var S=window.__szScale,rep={pane:__PANE__,checks:{}};
++try{
++  if(!(await S.until(function(){return S.settled();},90000))){
++    rep.error="the Entity Graph never reported settled (data-graph-settled, INV-298)";S.stamp(rep);return;}
++  var tab=document.getElementById("tab-graph");
++  rep.capped=/the graph is capped/i.test(tab?tab.textContent:"");
++  if(!rep.capped){S.stamp(rep);return;}
++  var toggle=S.modeToggle(),fits={},edges=null,drawn={};
++  async function look(){var net=!!(toggle&&toggle.checked),mode=net?"network":"all";
++    fits[mode]=S.fitReport();
++    if(net){var e=S.strokeReport("line"),c=S.strokeReport("circle");edges={edges:e,outlines:c};}
++    else drawn=S.drawnNames();}
++  await look();
++  if(toggle){if(await S.redraw(function(){toggle.click();}))await look();
++             else fits.toggle={status:"failed",detail:"the mode toggle's redraw never settled"};}
++  var fs=Object.keys(fits).map(function(k){return fits[k].status;});
++  rep.checks.fit_in_pane={status:fs.indexOf("failed")>=0?"failed":(fs.indexOf("passed")>=0?"passed":"not exercised"),modes:fits};
++  if(!edges)rep.checks.edge_colors={status:"not exercised",detail:"no relationship mode to draw"};
++  else{var bad=edges.edges.mismatches+edges.outlines.mismatches;
++    rep.checks.edge_colors={status:bad?"failed":(edges.edges.checked?"passed":"not exercised"),
++      detail:edges.edges.checked?"":"no relationship edge carries a stroke the data set",
++      edges:edges.edges,outlines:edges.outlines};}
++  rep.checks.records_beyond_cap=await S.recordsReport(drawn,3);
++}catch(e){rep.error=String(e&&e.stack||e);}
++S.stamp(rep);
++})();
++</script>
++"""
++
++
++def _scale_check_page(source: str, run: bool = True, pane: int = SCALE_PANE_PX) -> str:
++    """``source`` with the scale check injected: frames through ``setTimeout`` and the pane
++    width at the top of ``<head>``, the measurements (and, with ``run``, the check) before
++    ``</body>``."""
++    head = _SCALE_HEAD.replace("__PANE__", str(int(pane)))
++    tail = _SCALE_BODY + (_SCALE_RUN.replace("__PANE__", str(int(pane))) if run else "")
++    found = re.search(r"<head(?:\s[^>]*)?>", source, re.I)
++    if found:
++        source = source[: found.end()] + head + source[found.end():]
++    else:
++        source = head + source
++    if "</body>" in source:
++        return source.replace("</body>", tail + "</body>", 1)
++    return source + tail
++
++
++def _parse_scale_report(dom: str):
++    """The report the injected check stamped on the document element, or None."""
++    import html as _html
++
++    found = _SCALE_CHECK_RE.search(dom or "")
++    if not found:
++        return None
++    try:
++        return json.loads(_html.unescape(found.group(1)))
++    except ValueError:
++        return None
++
++
++def _scale_dom(exe: str, page: Path) -> str:
++    """Load ``page`` in headless Chrome and return the DOM after the virtual-time budget."""
++    done = subprocess.run(
++        [
++            exe,
++            "--headless=new",
++            "--no-sandbox",
++            "--disable-gpu",
++            "--hide-scrollbars",
++            "--window-size=1280,900",
++            f"--virtual-time-budget={_SCALE_VIRTUAL_TIME_MS}",
++            "--dump-dom",
++            _to_url(str(page)),
++        ],
++        check=False,
++        capture_output=True,
++        timeout=600,
++    )
++    return done.stdout.decode("utf-8", "replace")
++
++
++def run_scale_check(html: Path, exe=None, pane: int = SCALE_PANE_PX) -> dict:
++    """Run the scale check against the snapshot at ``html``; return its report.
++
++    ``{"status": "skipped", ...}`` when no headless Chrome/Chromium is found: the check reads
++    the DOM, which only Chrome's CLI exposes among this helper's backends.
++    """
++    exe = exe or _chrome_exe()
++    if exe is None:
++        return {"status": SCALE_SKIPPED, "reason": "no headless browser (Chrome/Chromium/Edge) was found"}
++    source = html.read_text(encoding="utf-8", errors="surrogateescape")
++    handle, path = tempfile.mkstemp(prefix=f".{html.stem}-scale-", suffix=".html", dir=str(html.parent))
++    os.close(handle)
++    temp = Path(path)
++    try:
++        temp.write_text(_scale_check_page(source, pane=pane), encoding="utf-8", errors="surrogateescape")
++        report = _parse_scale_report(_scale_dom(exe, temp))
++    except Exception as exc:  # best-effort, INV-122: report, never crash the module
++        report = {"error": f"the browser run failed: {exc}"}
++    finally:
++        try:
++            temp.unlink()
++        except OSError:
++            pass
++    if report is None:
++        report = {"error": "the page never stamped a result (the injected check did not finish)"}
++    return report
++
++
++def scale_verdict(report: dict) -> tuple:
++    """``(exit code, [(check, status, detail)])`` for a scale-check report.
++
++    ⛔ **A check that did not run is never a pass** (INV-265, INV-163): no browser is
++    ``skipped``; a check with nothing to look at -- no relationship edges, no entity outside
++    the graph in the merge browse, a layout that never settled -- is ``not exercised``. Only
++    an uncapped graph owes no check at all, and it says so rather than "passed".
++    """
++    if report.get("status") == SCALE_SKIPPED:
++        return SCALE_EXIT_SKIPPED, [(c, SCALE_SKIPPED, report.get("reason", "")) for c in SCALE_CHECKS]
++    if report.get("error"):
++        return SCALE_EXIT_NOT_EXERCISED, [(c, SCALE_NOT_EXERCISED, report["error"]) for c in SCALE_CHECKS]
++    if report.get("capped") is False:
++        return SCALE_EXIT_PASSED, [("graph", "not capped", "the scale checks apply only to a capped graph")]
++    rows, statuses = [], []
++    for check in SCALE_CHECKS:
++        entry = (report.get("checks") or {}).get(check) or {}
++        status = entry.get("status") or SCALE_NOT_EXERCISED
++        statuses.append(status)
++        rows.append((check, status, _scale_detail(check, entry)))
++    if SCALE_FAILED in statuses:
++        return SCALE_EXIT_FAILED, rows
++    if any(s != SCALE_PASSED for s in statuses):
++        return SCALE_EXIT_NOT_EXERCISED, rows
++    return SCALE_EXIT_PASSED, rows
++
++
++def _scale_detail(check: str, entry: dict) -> str:
++    if entry.get("detail"):
++        return str(entry["detail"])
++    if check == "fit_in_pane":
++        parts = []
++        for mode, fit in sorted((entry.get("modes") or {}).items()):
++            parts.append(
++                "%s: %s of %s nodes and %s of %s labels outside a %s px pane"
++                % (mode, fit.get("outside_nodes", "?"), fit.get("nodes", "?"),
++                   fit.get("outside_labels", "?"), fit.get("labels", "?"),
++                   (fit.get("pane") or ["?"])[0])
++            )
++        return "; ".join(parts)
++    if check == "edge_colors":
++        edges, outlines = entry.get("edges") or {}, entry.get("outlines") or {}
++        return "%s of %s edge strokes and %s of %s node outlines not painted as the data set them" % (
++            edges.get("mismatches", "?"), edges.get("checked", "?"),
++            outlines.get("mismatches", "?"), outlines.get("checked", "?"))
++    if check == "records_beyond_cap":
++        failed = entry.get("failed") or []
++        return "%d of %d entities outside the graph opened their records%s" % (
++            len(entry.get("checked") or []) - len(failed), len(entry.get("checked") or []),
++            ("; failed: " + ", ".join(str(f[0]) for f in failed)) if failed else "")
++    return ""
++
++
++def verify_scale_main(html: Path) -> int:
++    """`--verify-scale`: print one line per check and return the verdict's exit code."""
++    report = run_scale_check(html)
++    code, rows = scale_verdict(report)
++    for check, status, detail in rows:
++        print(f"scale-check: {check}\t{status}\t{detail}")
++    if code == SCALE_EXIT_SKIPPED:
++        print(
++            "skipped: no headless browser — the scale check needs headless Chrome, Chromium or "
++            "Edge to read the snapshot's DOM. Record it as skipped and name it at closing "
++            "(INV-163); never report it as passed.",
++            file=sys.stderr,
++        )
++    elif code == SCALE_EXIT_FAILED:
++        print(
++            "The snapshot failed a scale check. Fix the rule the failing check names "
++            "(visualization-api-reference.md → \"Graph rendering — labels, scale, and legends\"), "
++            "rebuild the snapshot and run this check again before capturing screenshots.",
++            file=sys.stderr,
++        )
++    elif code == SCALE_EXIT_NOT_EXERCISED:
++        print(
++            "A scale check could not be exercised on this snapshot; that is not a pass "
++            "(INV-265). Record which one and why, and name it at closing (INV-163).",
++            file=sys.stderr,
++        )
++    return code
++
++
+ def capture(
+     target: str,
+     out_dir: Path,
+@@ -1394,8 +1742,31 @@ def main(argv=None) -> int:
+         help="Search text for the Search / Probe tab; requires --url (the static "
+         "snapshot has no engine to search).",
+     )
++    ap.add_argument(
++        "--verify-scale",
++        action="store_true",
++        help="Capture nothing: check the snapshot's interactive Entity Graph at a "
++        f"{SCALE_PANE_PX}px pane when its graph is capped -- records of an entity outside the "
++        "graph open, every drawn node is inside the pane after the first fit, and "
++        "relationship-mode edges paint their type colors. Requires --html. Exit 0 passed "
++        "(or not capped), 1 a check failed, 2 skipped (no headless browser), 3 a check "
++        "could not be exercised.",
++    )
+     args = ap.parse_args(argv)
+ 
++    if args.verify_scale:
++        if not args.html or args.tabs or args.single or args.query:
++            print(
++                "--verify-scale checks a saved snapshot: pass it with --html, and no "
++                "--tabs, --single or --query.",
++                file=sys.stderr,
++            )
++            return 1
++        if not Path(args.html).is_file():
++            print(f"no such HTML file: {args.html}", file=sys.stderr)
++            return 1
++        return verify_scale_main(Path(args.html))
++
+     if args.single and args.tabs:
+         print(
+             "--single captures the page as one image and --tabs names tabs to capture; "
+diff --git a/scripts/senzing_viz_server.py b/scripts/senzing_viz_server.py
+index 7454e4b..ef1fce5 100755
+--- a/scripts/senzing_viz_server.py
++++ b/scripts/senzing_viz_server.py
+@@ -962,7 +962,16 @@ main{padding:0}
+ .legend{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px}
+ .legend .row{display:flex;align-items:center;gap:6px;margin:2px 0}
+ .legend .dot{width:12px;height:12px;border-radius:50%}
+-.node circle{stroke:#fff;stroke-width:1.5px;cursor:pointer}
++.node circle{cursor:pointer}
++/* ⛔ (#883) A stylesheet rule must never override a stroke the renderer sets from the DATA.
++   An SVG presentation attribute (`stroke="…"`, `stroke-width="3"`) loses to ANY matching CSS
++   rule, so an unscoped `.node circle{stroke:#fff;stroke-width:1.5px}` painted every source's
++   assigned outline white at 1.5px -- the 7th and later sources, which the stroke channel exists
++   to tell apart, all looked alike while the DOM attributes read correctly. The defaults
++   therefore match ONLY a mark the data gave no stroke (`:not([stroke])`): a single-source node
++   in the first six keeps its white outline, and an assigned one paints as assigned.
++   Contract: visualization-api-reference.md -> "Graph rendering" -> stroke precedence. */
++.node circle:not([stroke]){stroke:#fff;stroke-width:1.5px}
+ .node text,.node-labels text{font-size:10px;fill:var(--ink);pointer-events:none}
+ /* Label visibility is driven by a class on the container, set explicitly at
+    init -- an unchecked checkbox fires no change event, so the initial state
+@@ -981,7 +990,10 @@ main{padding:0}
+ .legend .row{cursor:pointer;user-select:none}
+ .legend .row.off{opacity:.35}
+ .legend .cnt{color:var(--muted);margin-left:auto;padding-left:8px}
+-.edge line{stroke:var(--line);stroke-width:1.5px}
++/* (#883) Same precedence rule as `.node circle` above: network mode writes each edge's
++   relationship-type color and a 2px width as attributes, and an unscoped rule here painted
++   every relationship gray at 1.5px. All-entities edges carry no stroke attribute and keep this. */
++.edge line:not([stroke]){stroke:var(--line);stroke-width:1.5px}
+ .edge text{font-size:9px;fill:var(--muted)}
+ .tooltip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;padding:6px 9px;border-radius:6px;font-size:12px;opacity:0;max-width:240px}
+ .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+@@ -1196,6 +1208,8 @@ async function drawGraph(){
+   // tick starvation this works around is specific to headless virtual time: a real browser
+   // advances requestAnimationFrame normally, so a bootcamper opening the standalone snapshot
+   // already gets a properly settled layout and keeps its animation, its labels and its zoom.
++  // (#883) What the interactive view now shares with the capture is the FIT alone, once, at
++  // its first settle -- never the synchronous settle and never the capture's label ceiling.
+   const capture=/[?&]capture=1/.test(location.search);
+   // In network mode, keep only entities that a relationship actually connects -- the
+   // subgraph the removed Relationship Network tab showed.
+@@ -1227,8 +1241,15 @@ async function drawGraph(){
+   const svg=box.append("svg").attr("width",W).attr("height",H).attr("viewBox",[0,0,W,H]);
+   const root=svg.append("g");
+   // scaleExtent's floor is lowered for the capture fit: a settled 85-entity layout needs
+-  // well under 0.2 to fit, and clamping there would leave nodes off-canvas.
+-  const zoomB=d3.zoom().scaleExtent([0.05,4]).on("zoom",function(ev){root.attr("transform",ev.transform);});
++  // well under 0.2 to fit, and clamping there would leave nodes off-canvas. 0.05 is the floor
++  // a reader zooms down to; `fitToExtent` lowers it further only when a fit needs it (#883).
++  // ⛔ (#883) The reader's own zoom or pan is remembered, per layout: d3 sets `sourceEvent`
++  // only on an input event (wheel, drag, double-click, touch), never on the programmatic
++  // `zoomB.transform` the fit applies, so a fit cannot mark itself as the reader's choice.
++  let readerMoved=false,fitted=false;
++  const zoomB=d3.zoom().scaleExtent([0.05,4]).on("zoom",function(ev){
++    root.attr("transform",ev.transform);
++    if(ev.sourceEvent)readerMoved=true;});
+   svg.call(zoomB);
+   // Node labels are truncated to fit, so the distinctness rule applies here exactly as it
+   // does to match keys (contract: "Defaults at production scale" item 1). Two entities whose
+@@ -1330,24 +1351,42 @@ async function drawGraph(){
+     for(let i=0;i<need;i++){sim.tick();}
+     place();
+     fitToExtent();
++    fitted=true;
+     graphSettled(true);
+   }
+   // ⛔ (INV-299) A SETTLED layout must still be a VISIBLE one. `forceCenter` centers the
+   // centroid and bounds nothing, so the finished 85-entity layout spreads well outside
+   // 1440x900: presettling alone put most nodes off-canvas and lost more of the graph than the
+   // unsettled clump it replaced. The near-initial layout was accidentally masking this.
++  // ⛔ (#883) ONE fit, used by both renders: the capture calls it after its synchronous
++  // settle, and the interactive app and the snapshot call it at the layout's FIRST settle
++  // (the "end" handler below). Before #883 only the capture fitted, so a 1,500-node graph
++  // opened in the reader's pane at scale 1 with most of it outside a narrow window.
+   function fitToExtent(){
+     let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
++    // A drawn label is centered under its node and can be wider than the node, so its
++    // measured half-width joins the horizontal extent -- only while the labels are drawn:
++    // the container's hide class is the app's own switch, and a capture's first render has
++    // not set it yet, so `captureLabels` stands in for it there.
++    const halfLabel={};
++    if(captureLabels&&!document.getElementById("graph-container").classList.contains("hide-node-labels")){
++      label.each(function(d){halfLabel[d.id]=(this.getComputedTextLength?this.getComputedTextLength():0)/2+2;});
++    }
+     nodes.forEach(function(d){
+-      const r=radius(d)+14;
+-      x0=Math.min(x0,d.x-r);x1=Math.max(x1,d.x+r);
++      const r=radius(d)+14,hw=Math.max(r,halfLabel[d.id]||0);
++      x0=Math.min(x0,d.x-hw);x1=Math.max(x1,d.x+hw);
+       // the label sits BELOW the node, so the extent is asymmetric -- but only when the
+       // labels are actually drawn, or the fit reserves space for text nobody renders.
+       y0=Math.min(y0,d.y-r);y1=Math.max(y1,d.y+r+(captureLabels?18:0));
+     });
+     if(!isFinite(x0))return;
+     const w=Math.max(1,x1-x0),h=Math.max(1,y1-y0);
+-    const k=Math.min(4,Math.max(0.05,0.94*Math.min(W/w,H/h)));
++    const k=Math.min(4,0.94*Math.min(W/w,H/h));
++    if(!(k>0))return;
++    // ⛔ (#883) The zoom floor FOLLOWS the fit: lowered to exactly the fit's scale when the
++    // fit needs less than the floor, and left at 0.05 otherwise. A fixed floor clamped the
++    // fit, so a graph wider than 20x the pane was "fitted" with its edges still off-screen.
++    if(k<zoomB.scaleExtent()[0])zoomB.scaleExtent([k,4]);
+     svg.call(zoomB.transform,
+       d3.zoomIdentity.translate((W-k*(x0+x1))/2,(H-k*(y0+y1))/2).scale(k));
+   }
+@@ -1356,7 +1395,16 @@ async function drawGraph(){
+   addGraphControls("graph-container",nodes.length,!captureLabels);
+   // (INV-298) d3 fires "end" when alpha decays below alphaMin -- the layout's own definition
+   // of finished, rather than an outside guess at how long that takes.
+-  sim.on("end",function(){graphSettled(true);});
++  // ⛔ (#883) The FIRST settle fits, once, keyed to this signal and never to a timer; every
++  // later settle (a dragged node re-heats the layout) leaves the view alone, and a reader
++  // who zoomed or panned before the first settle keeps their view, since that settle does
++  // not fit either. The flags live in this render's closure, so a mode toggle's redraw is
++  // a new layout with its own first fit, and the source-legend filter, which restarts
++  // nothing, never refits.
++  sim.on("end",function(){
++    if(!fitted&&!readerMoved)fitToExtent();
++    fitted=true;
++    graphSettled(true);});
+   function dstart(ev,d){if(!ev.active){graphSettled(false);sim.alphaTarget(0.3).restart();}d.fx=d.x;d.fy=d.y;}
+   function dragged(ev,d){d.fx=ev.x;d.fy=ev.y;}
+   function dend(ev,d){if(!ev.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}
+@@ -1807,17 +1855,29 @@ async function drawMatchKeys(){const d=await getJSON("/api/matchkeys");const box
+   // "...ISTRATION_COUNTRY+LEI_NUMBER" and could not be told apart. Counts were
+   // right, labels useless, and the chart looked fine.
+   const W=Math.min(720,box.node().clientWidth),barh=26;
++  // Size from the RENDERED width, never an assumed one. The fixed estimate this
++  // replaced was below the advance of every monospace font (about 0.6em, 6.6px at
++  // 11px), so a 25-character key got a gutter 11px too narrow and its leading "+N"
++  // started left of the SVG -- the head again, the distinguishing part. Measure the
++  // advance once, in the labels' own font (one monospace font, so one advance serves
++  // every label); when there is no 2D context or the result is not a positive number,
++  // fall back to 0.62em, which over-estimates every common monospace font.
++  const adv=(function(){const sample="+NAME+ADDRESS+NATIONAL_ID+OTHER_ID_0123456789";
++    try{const ctx=document.createElement("canvas").getContext("2d");
++      if(ctx){ctx.font="11px __CODE_FONT__";const a=ctx.measureText(sample).width/sample.length;
++        if(isFinite(a)&&a>0)return a;}}catch(e){}
++    return 11*0.62;})();
+   const longest=d3.max(items,function(z){return (z.match_key||"").length;})||0;
+-  const gutter=Math.max(150,Math.min(320,longest*5.9+14));
++  const gutter=Math.max(150,Math.min(320,longest*adv+14));
+   const mm={t:6,r:44,b:6,l:Math.min(gutter,W*0.55)},H=mm.t+mm.b+items.length*barh;
+   // MIDDLE-ellipsize, never left-trim. Right-trimming alone is not enough: real
+   // keys are "+A+B+C..." sequences that often share a long prefix and differ only
+   // in the last segment, so head-only truncation renders the top bars identically
+   // -- the same unreadable chart, just failing from the other end. Keeping both
+   // ends makes keys that differ at either end distinguishable.
+-  const maxChars=Math.max(8,Math.floor((mm.l-10)/5.9));
+-  function fitKey(k){k=k||"";if(k.length<=maxChars)return k;
+-    const tail=Math.max(6,Math.floor((maxChars-1)*0.5)),head=maxChars-1-tail;
++  const maxChars=Math.max(8,Math.floor((mm.l-10)/adv));
++  function fitKey(k,n){k=k||"";n=Math.max(1,n===undefined?maxChars:n);if(k.length<=n)return k;
++    const tail=Math.max(Math.min(6,n-2),Math.floor((n-1)*0.5)),head=n-1-tail;
+     return k.slice(0,head)+"…"+k.slice(k.length-tail);}
+   // The requirement is DISTINCTNESS, not the ellipsis strategy: no two rendered
+   // labels may be identical unless their underlying values are. Middle-ellipsis
+@@ -1831,7 +1891,10 @@ async function drawMatchKeys(){const d=await getJSON("/api/matchkeys");const box
+     if(seen[label]===undefined){seen[label]=i;return;}
+     // Only a real collision (different source values) needs disambiguating.
+     if(items[seen[label]].match_key===items[i].match_key)return;
+-    fitted[i]=label+" ("+(i+1)+")";
++    // The suffix counts inside the width budget: fit to maxChars minus its length
++    // first, or the suffixed label overruns the gutter and loses its head.
++    const sfx=" ("+(i+1)+")";
++    fitted[i]=fitKey(items[i].match_key,maxChars-sfx.length)+sfx;
+   });
+   function labelFor(i){return fitted[i];}
+   const svg=box.append("svg").attr("width",W).attr("height",H);
+@@ -2241,25 +2304,100 @@ def _snapshot_probe_html(model, engine, flags, port=8080, dataset=""):
+     # no engine: it reads the embedded `merges` payload, so it works with no server.
+     browse = '<div id="probe-btns"></div>'
+     if not cards:
+-        return note + browse + '<p class="muted">No multi-record entities to show.</p>'
++        # ⚠️ (#883) `#results` is where that browse renders its cards, so it ships even with
++        # no example to show. Without it, a snapshot whose example searches all missed (or
++        # ran with no engine) offered "Show all merged entities" and drew nothing on click.
++        return note + browse + '<div id="results"><p class="muted">No multi-record entities to show.</p></div>'
+     return note + browse + '<div id="results">' + "".join(cards) + "</div>"
+ 
+ 
+-def write_snapshot(model, engine, flags, title, out_path, port=8080, dataset=""):
+-    """Write a fully self-contained HTML snapshot with D3 and data embedded, so it
+-    renders with no server and no network access."""
++def _snapshot_entity_lists(payload):
++    """Every list of entities a **retained** snapshot surface puts a Records button on.
++
++    These are exactly the lists the offline page renders from the embedded payload:
++    `drawGraph()`'s node modal, `showAllMerges()`'s browse, and `renderEntityList()` for
++    the largest-entities list and all three aggregate drill-downs (histogram buckets,
++    cross-source cells, match-key rows). ``features`` is deliberately absent — it carries
++    bucket counts, never an entity id — and so is `search`, which a snapshot disables.
++
++    ⛔ **This census is the Records action's denominator** (#675). A surface added to the
++    snapshot and not added here keeps its Records button and loses its records.
++    """
++    stats = payload.get("stats") or {}
++    lists = [
++        (payload.get("graph") or {}).get("nodes") or [],
++        (payload.get("merges") or {}).get("entities") or [],
++        stats.get("sample_entities") or [],
++    ]
++    lists.extend((stats.get("bucket_entities") or {}).values())
++    lists.extend(((payload.get("overlap") or {}).get("cell_entities") or {}).values())
++    lists.extend(((payload.get("matchkeys") or {}).get("match_key_entities") or {}).values())
++    return lists
++
++
++def _snapshot_reachable_entity_ids(payload):
++    """The entity ids of every entity `_snapshot_entity_lists` offers, de-duplicated."""
++    ids = set()
++    for entities in _snapshot_entity_lists(payload):
++        for entity in entities or []:
++            eid = (entity or {}).get("entity_id")
++            if eid is not None:
++                ids.add(eid)
++    return ids
++
++
++def _snapshot_records_index(model, payload):
++    """Records for every reachable entity whose records no embedded surface already carries.
++
++    ⛔ **The graph payload is not the Records index.** `graph` is embedded capped at
++    ``GRAPH_NODE_CAP`` while `merges` and the drill-down lists are embedded on their own
++    terms, so indexing `graph.nodes` alone made an entity the snapshot still *offers* —
++    through the "Show all merged entities" browse, a histogram bucket, a cross-source cell
++    or a match-key row — answer "not found: no such entity" when the cap had dropped its
++    node. A valid entity could be browsed and then denied (#675). The cap stays: it bounds
++    what the graph *renders*, not what the page can look up.
++
++    Only the remainder is emitted. `graph.nodes` and `merges.entities` carry their own
++    `records` arrays, and the shim indexes those in place, so no record array is embedded
++    twice in a file whose size grows with the bootcamper's dataset.
++    """
++    inline = set()
++    for entities in (
++        (payload.get("graph") or {}).get("nodes") or [],
++        (payload.get("merges") or {}).get("entities") or [],
++    ):
++        for entity in entities:
++            inline.add(entity.get("entity_id"))
++    index = []
++    for eid in sorted(_snapshot_reachable_entity_ids(payload) - inline):
++        entry = model.records(eid)
++        if entry.get("error"):
++            continue  # not in the model at all; there is nothing to index
++        index.append(entry)
++    return index
++
++
++def _snapshot_payload(model):
++    """The data the standalone snapshot embeds, as `__DATA__`."""
+     payload = {
+         "stats": model.stats(),
+         "graph": model.graph(cap=GRAPH_NODE_CAP),
+         "merges": model.merges(),
+-        # No "records" key: /api/records is per-entity, and graph.nodes already
+-        # carries every entity with its constituent records, so the shim below
+-        # indexes those instead. A second full copy would have embedded the same
+-        # records twice in a file whose size grows with the bootcamper's dataset.
+         "overlap": model.overlap(),
+         "matchkeys": model.match_keys(),
+         "features": model.feature_scores(),
+     }
++    # /api/records is per-entity, so it is served from an index rather than embedded as a
++    # whole collection. The index completes the surfaces that already carry their own
++    # records; see _snapshot_records_index for why it is not keyed off the graph alone.
++    payload["records_index"] = _snapshot_records_index(model, payload)
++    return payload
++
++
++def write_snapshot(model, engine, flags, title, out_path, port=8080, dataset=""):
++    """Write a fully self-contained HTML snapshot with D3 and data embedded, so it
++    renders with no server and no network access."""
++    payload = _snapshot_payload(model)
+     # The embedded-data shim runs after D3 and before the page bootstrap, replacing
+     # the fetch-based bootstrap with the inlined data.
+     #
+@@ -2268,13 +2406,22 @@ def write_snapshot(model, engine, flags, title, out_path, port=8080, dataset="")
+     # correctly do — hands showRecords() an object with no `records` array, so every
+     # entity in a standalone snapshot reported "No records returned for this entity"
+     # while the live server showed them. Resolve the entity_id here instead.
++    #
++    # ⛔ The lookup indexes EVERY surface the snapshot retains, not `graph.nodes` alone:
++    # the graph is capped at GRAPH_NODE_CAP and the other surfaces are not capped with
++    # it, so a graph-only index denied entities the page itself still offered (#675).
++    # Each of the three sources is built from the same model entities, so a repeated
++    # entity is written twice with identical records.
+     shim = (
+         "<script>const __DATA__=" + _script_json(payload) + ";"
+         "var __RECS__=null;"
+         "function __recordsFor(id){if(!__RECS__){__RECS__={};"
+-        "(((__DATA__.graph||{}).nodes)||[]).forEach(function(n){"
+-        "__RECS__[String(n.entity_id)]={entity_id:n.entity_id,entity_name:n.entity_name,"
+-        "records:n.records||[]};});}"
++        "var add=function(n){if(!n||n.entity_id===undefined||n.entity_id===null)return;"
++        "__RECS__[String(n.entity_id)]={entity_id:n.entity_id,"
++        "entity_name:n.entity_name,records:n.records||[]};};"
++        "(((__DATA__.graph||{}).nodes)||[]).forEach(add);"
++        "(((__DATA__.merges||{}).entities)||[]).forEach(add);"
++        "((__DATA__.records_index)||[]).forEach(add);}"
+         "return __RECS__[id]||{entity_id:id,error:'not found: no such entity'};}"
+         "window.fetch=function(u){var p=u.split('?')[0].replace('/api/','');"
+         "var q=(u.split('?')[1]||'');"
+diff --git a/skills/module-03b-truthset-visualization/visualization-api-reference.md b/skills/module-03b-truthset-visualization/visualization-api-reference.md
+index 5d65f74..4233143 100644
+--- a/skills/module-03b-truthset-visualization/visualization-api-reference.md
++++ b/skills/module-03b-truthset-visualization/visualization-api-reference.md
+@@ -537,6 +537,19 @@ Unlike `why`/`how`, this endpoint's data MUST also be **embedded in the standalo
+ the Records action works offline — it needs no engine call at view time, only the record data
+ already gathered when the model was built.
+ 
++⛔ **The embedded records index MUST cover every entity the snapshot still offers** — every
++entity carried by an embedded graph node, by the merge browse, by the largest-entities list or
++by any aggregate drill-down list — and not only the entities the graph node cap kept. The graph
++payload bounds what is *rendered*, never what can be *looked up*: an index built from
++`graph.nodes` alone answers `not found: no such entity` for an entity the same page is still
++listing, so a bootcamper browses a valid entity and is then told it does not exist. Implementations
++MAY build the index however they like — the reference indexes the surfaces that already carry
++their own records and embeds the remainder once, so no record array ships twice — but the
++census MUST be the surfaces the snapshot retains. The node cap and the per-list caps stay
++exactly as they are: the repair is to the lookup's denominator, never to what is shown, and an
++entity **no** retained surface offers still answers `not found: no such entity` rather than
++being invented.
++
+ **`GET /api/overlap`:** Cross-source overlap matrix — how many resolved entities each pair of data
+ sources shares
+ 
+@@ -681,6 +694,15 @@ highest bars all render as the same trailing fragment and cannot be told apart 
+ labels useless, chart looking fine. Required behavior:
+ 
+ - Size the label gutter from the longest key present, up to a cap, before truncating anything.
++- ⛔ **(INV-153) No label glyph may start left of the chart's left edge.** Size the gutter from the
++  **rendered** width of the labels: measure the label font's per-character advance in the font the
++  labels are drawn in (the reference measures it once with a canvas `measureText`), or, where it
++  cannot be measured, estimate it at **no less than 0.62 em**. Use that one advance for both the
++  gutter and the truncation limit. A fixed estimate below the font's real advance clips the head of a
++  right-anchored label, the part that distinguishes it: the reference once assumed 5.9 px per
++  character at 11 px, against about 6.6 px, and its 25-character key started 11 px left of the edge.
++  A disambiguating suffix counts inside the width budget: fit the key to the limit minus the suffix's
++  length, then append it.
+ - **Middle-ellipsize** (`+NAME+ADDRESS+NATIONAL_ID+…RATION_COUNTRY+LEI_NUMBER`); never trim from the
+   left. Right-truncation alone is **not** sufficient: match keys are `+A+B+C…` sequences that
+   commonly share a long prefix and differ only in the final segment, so head-only truncation renders
+@@ -994,6 +1016,8 @@ restate it (INV-300).
+   **2–3 px**. ⚠️ **Leave the interactive view alone** — a real browser advances animation frames
+   normally, so a reader opening the app or the standalone snapshot already gets a settled layout,
+   and applying the capture's label ceiling there would degrade a view they can zoom and toggle.
++  The fit alone also reaches the interactive view, once, at its first settle — see
++  [the initial fit](#graph-initial-fit) below; the synchronous settle and the label ceiling do not.
+   ⚠️ **Suppress both label sets through your own auto-off mechanism**, not a bespoke hide on the
+   name layer: the interactive ceiling governs entity names *and* match keys together, and reusing
+   it keeps the on-screen toggles honest about what was actually drawn.
+@@ -1010,6 +1034,33 @@ restate it (INV-300).
+   variable.** The Python reference held its simulation in a top-level `let`, which never reaches
+   `window`, so nothing outside the page's own script could observe it — an attribute is
+   observable by any driver in any language, which is the whole point of putting the rule here.
++- <a id="graph-initial-fit"></a>**The graph opens fitted, once, and then the view is the reader's (required —
++  INV-002/INV-090).** ⛔ **(INV-002/INV-090) When a layout first settles, fit every drawn node inside the graph
++  pane — its marker, and its label while labels are drawn — in the live app and in the standalone
++  snapshot, in both modes.** Key the fit to that first settle (the moment the settled signal above is
++  first set for the layout), never to a timer. ⛔ **(INV-002/INV-090) The zoom floor follows the fit:**
++  where the fit needs a smaller scale than the floor the reader zooms down to, lower the floor to the
++  fit's scale, so the fit is never clamped, and keep the floor where it does not. ⛔ **(INV-002/INV-090)
++  Fit that layout once:** a later settle — a dragged node re-heats the layout — never refits, and a
++  reader who zooms or pans **before** the first settle keeps their view, because that settle does
++  not fit either. A mode toggle that redraws the graph is a new layout and gets its own first fit;
++  a legend filter only hides marks and never refits. An empty graph has nothing to fit; a single
++  node fits at the maximum zoom. The capture render's synchronous fit above is the same fit, run at
++  its synchronous settle. Observed at 1,500 nodes (#883): only the capture fitted, so the app and
++  the snapshot opened at scale 1 with most of the graph outside a narrow pane, and a fixed 0.05
++  floor would have clamped a fit wider than twenty panes.
++- <a id="stroke-precedence"></a>**A stroke the data sets is the stroke that is painted (required —
++  INV-002/INV-090).** ⛔ **(INV-002/INV-090) No stylesheet rule may override a stroke color or width
++  the renderer sets from the data** — the relationship type on an edge, the source set on a node
++  outline ("Coloring graph nodes"). ⚠️ **An SVG presentation attribute (`stroke="…"`,
++  `stroke-width="2"`) loses to every matching CSS rule**, so a default such as
++  `.edge line{stroke:…;stroke-width:1.5px}` repaints every edge while the DOM attribute still reads
++  correctly: only the browser's **computed** style shows it, which is what a check must read.
++  Scope a default to marks the data gave no stroke (the reference writes `:not([stroke])`), or set
++  the data value as an inline style; defaults still apply where the data sets nothing, such as
++  edges in the full-population mode and single-source nodes in the first six. Observed (#883):
++  relationship-mode edges painted gray at 1.5px over their type colors at 2px, and the 7th and
++  later sources, which the stroke channel exists to tell apart, all painted a white 1.5px outline.
+ - **Collision must account for the label's extent, not just the marker (required).** Size the
+   collision/overlap pass from the rendered label as well as the marker, and apply it **only while
+   labels are actually shown** — inflating it for text nobody renders over-separates a
+@@ -1141,7 +1192,10 @@ not only in the live app. The snapshot's Search / Probe body MUST therefore incl
+ render and the snapshot silently loses the capability. The example-query **chips** are live-only by
+ design — they drive the search box, which a static file does not have — so they are suppressed
+ there rather than shipped as dead controls. **The Records action works offline too**, because `records` is embedded: it needs no
+-engine call at view time, unlike `why`/`how`. The Feature Scores tab shows whatever was computed
++engine call at view time, unlike `why`/`how`. It resolves against the whole retained index —
++every entity any embedded surface offers, including the ones the graph node cap dropped — so an
++entity reachable through the merge browse or an aggregate drill-down is never reported as
++missing because its node was not rendered (see `GET /api/records` above). The Feature Scores tab shows whatever was computed
+ (capped) at build time. (`dashboard` is no longer embedded — the endpoint was removed and its
+ content folded into `stats`.)
+ 
+@@ -1219,6 +1273,10 @@ collision this fixes; that is the error made while repairing it by hand, not a h
+ **The legend MUST name each combination** it colors (INV-259), labeled as a combination and counted over the
+ nodes actually drawn. A color a viewer cannot name is not an improvement over the wrong color.
+ 
++The stroke and stroke width a node is assigned must also be what the browser paints: that rule is
++stated once, in "Graph rendering — labels, scale, and legends" →
++[stroke precedence](#stroke-precedence) (INV-300).
++
+ #### The encoding self-check (required — behavior, in every language)
+ 
+ ⛔ **(INV-270) The graph endpoint MUST expose a self-check, and the build step MUST run it before capture.**
+diff --git a/skills/module-07-query-visualize-discover/phase1-query-visualize.md b/skills/module-07-query-visualize-discover/phase1-query-visualize.md
+index 721cc10..7c5c6a4 100644
+--- a/skills/module-07-query-visualize-discover/phase1-query-visualize.md
++++ b/skills/module-07-query-visualize-discover/phase1-query-visualize.md
+@@ -818,6 +818,8 @@ of the Truth Set. It MUST:
+   here, and never pass "the Senzing Truth Set": this app points at the Bootcamper's data, the
+   snapshot is permanent, and a Truth Set label on their own data is a false claim in a keepsake
+   (INV-172). The contract's "Snapshot" section is the statement of record.
++  When the graph payload is capped, run [the scale check](#snapshot-scale-check) on the snapshot
++  first, and capture only once it has passed, or has been recorded as skipped or not exercised.
+   After generating it, capture screenshots for the recap per
+   `../bootcamp-onboarding/module-completion.md` → "Capturing visualization screenshots" (skip
+   silently with no headless capability, otherwise embed **every** captured tab in this module's
+@@ -864,6 +866,46 @@ of the Truth Set. It MUST:
+   `../module-03b-truthset-visualization/phase1-visualization.md` → 2.4b, where the same omission
+   shipped an eight-tab snapshot beside six-tab prose).
+ 
++<a id="snapshot-scale-check"></a>
++⛔ **(INV-129) When the graph is capped, check the snapshot at scale before capturing its screenshots.**
++The Truth Set never reaches the graph cap, so these checks have only this run to catch what breaks
++at the Bootcamper's scale. The bundled capture helper runs them in a verification mode that
++captures nothing, against `docs/visualizations/results_visualization.html`:
++
++```bash
++python3 "${CLAUDE_PLUGIN_ROOT}/scripts/capture_screenshots.py" \
++  --html docs/visualizations/results_visualization.html --verify-scale
++```
++
++Guide-run in the guide's POSIX shell (Git Bash on Windows); unverified on Windows: no test runs it
++there ([guide-run blocks](../bootcamp-onboarding/ground-rules.md#guide-run-blocks)).
++
++It opens the snapshot in headless Chrome with the graph pane 480 px wide, lets the interactive
++layout reach its first settle, and prints one line per check:
++
++- `records_beyond_cap`: an entity the "Show all merged entities" browse offers outside the graph
++  opens its records, not "not found", as required by the offline Records contract.
++- `fit_in_pane`: every drawn node, with its label while labels are drawn, is inside the pane after
++  the first fit, in both modes.
++- `edge_colors`: relationship-mode edges paint their relationship-type colors, and an assigned node
++  outline paints as assigned.
++
++The rules behind the last two are stated once in
++`../module-03b-truthset-visualization/visualization-api-reference.md` → "Graph rendering — labels,
++scale, and legends" (the initial fit and the stroke precedence; INV-300). The helper reads only what
++that contract fixes, so a snapshot from a Java or C# server is checked the same way. Act on its
++exit code:
++
++- **0**: passed, or the graph is not capped, which it says; capture as above.
++- **1**: a check failed. Fix the server against the rule the failing line names, rebuild the
++  snapshot and run the check again, as the snapshot check above does; capture only once it passes.
++- **2**: skipped, no headless browser. Record `scale_check` as skipped in `m7_visualizations`,
++  capture as above, and name the skipped check at closing (INV-163); never report it as passed.
++- **3**: a check could not be exercised, and its line says why. Record which, and name it at
++  closing as for a skipped check (INV-163, INV-265).
++
++The check is agent-side and asks the Bootcamper nothing (INV-012).
++
+ ⛔ **The server stays running — screenshot capture must not stop it.** The API probes and the
+ screenshot pass above are agent-side verification, not the end of the interaction. Follow the
+ server-lifetime contract in `../module-03b-truthset-visualization/visualization-api-reference.md` →

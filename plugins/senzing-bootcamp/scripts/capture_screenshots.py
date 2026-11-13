@@ -60,6 +60,12 @@ Usage::
 On success it prints one ``<png path>\\t<tab label>`` line per capture and exits 0.
 Exit codes: 0 = wrote at least one PNG; 2 = no headless capability available
 (caller should skip screenshots); 1 = bad arguments.
+
+``--html <snapshot> --verify-scale`` captures nothing: it checks the snapshot's interactive
+Entity Graph at a 480px pane when the graph is capped (#883) and prints one
+``scale-check: <check>\\t<status>\\t<detail>`` line per check. Exit codes there: 0 = passed (or
+the graph is not capped), 1 = a check failed, 2 = skipped (no headless Chrome/Chromium/Edge),
+3 = a check could not be exercised. See "Scale check" below.
 """
 
 from __future__ import annotations
@@ -1296,6 +1302,348 @@ def write_manifest(
     return True
 
 
+# --------------------------------------------------------------------------- #
+# Scale check (#883): the snapshot's INTERACTIVE graph, checked before capture
+# --------------------------------------------------------------------------- #
+#
+# Every check above is about the capture render (`?capture=1`). A bootcamper opens the
+# snapshot itself, at whatever size their window is, and at full scale three things broke
+# there that no Truth Set capture could show (#883): the graph opened unfitted, with most of a
+# 1,500-node layout outside a narrow pane; a stylesheet rule painted every relationship edge
+# gray over the colors the renderer had written; and an entity the snapshot offered past the
+# graph cap had once answered "not found" for its records (#675). `--verify-scale` loads the
+# snapshot in headless Chrome, lets its own interactive layout run to its first settle, and
+# checks those three in the DOM, so Module 7 keeps screenshots only of a snapshot that passed.
+#
+# ⚠️ **What makes the interactive path observable here at all.** Headless virtual time does
+# not service `requestAnimationFrame`, so an animated layout advances ~5 of its ~300 ticks and
+# never reaches its own settle (INV-298) -- the reason the capture has a synchronous render.
+# The check must not use that render: it is testing what the reader gets. So the injected head
+# script routes animation frames through `setTimeout`, which virtual time DOES advance, before
+# the page's own scripts load (d3 binds `requestAnimationFrame` when it loads). The page's code
+# is otherwise untouched; its own settle signal says when the first fit has happened.
+#
+# ⚠️ **Generator-neutral by construction.** It reads only what the any-language contract
+# fixes: the `tab-graph` / `tab-probe` sections and `activate()` (INV-124), the
+# `data-graph-settled` signal (INV-298), the capped note's wording, the "Show only entities
+# with relationships" toggle, the "Show all merged entities" browse and the "Records" action
+# (visualization-api-reference.md). A Java or C# app's snapshot is checked the same way, and
+# `TheCheckerReadsAnyGeneratorsSnapshot` in the #883 test proves it on a hand-written page. One
+# exception: node LABELS are found by the reference's `node` / `node-labels` classes, which the
+# contract does not fix, so on another generator's snapshot the fit check measures every node
+# marker and no label.
+
+#: The pane width the fit is checked at. Narrow on purpose: a fit that holds at 480px holds in
+#: any wider window, and #883's reporter saw the overflow in a side-by-side pane.
+SCALE_PANE_PX = 480
+
+#: The three checks, in report order. Module 7's snapshot check names each.
+SCALE_CHECKS = ("records_beyond_cap", "fit_in_pane", "edge_colors")
+
+SCALE_PASSED = "passed"
+SCALE_FAILED = "failed"
+SCALE_NOT_EXERCISED = "not exercised"
+SCALE_SKIPPED = "skipped"
+
+#: Exit codes for `--verify-scale`. 2 matches the capture's "no headless capability".
+SCALE_EXIT_PASSED = 0
+SCALE_EXIT_FAILED = 1
+SCALE_EXIT_SKIPPED = 2
+SCALE_EXIT_NOT_EXERCISED = 3
+
+_SCALE_CHECK_RE = re.compile(r'data-sz-scale-check="([^"]*)"')
+_SCALE_VIRTUAL_TIME_MS = 180000
+
+# Injected right after `<head>`, ahead of every script the page carries.
+_SCALE_HEAD = """<script>
+(function(){
+  window.requestAnimationFrame=function(cb){return setTimeout(function(){cb(performance.now());},16);};
+  window.cancelAnimationFrame=function(id){clearTimeout(id);};
+})();
+</script>
+<style>#tab-graph{width:__PANE__px!important;max-width:__PANE__px!important;padding-left:0!important;padding-right:0!important;box-sizing:content-box!important}</style>
+"""
+
+# Injected before `</body>`. Exposes its helpers as `window.__szScale` so a test can drive one
+# scenario with the same measurements the check uses; `_SCALE_RUN` then runs the check.
+_SCALE_BODY = r"""<script>
+(function(){
+var S=window.__szScale={};
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+S.sleep=sleep;
+S.until=async function(pred,ms){for(var t=0;t<=ms;t+=25){try{if(pred())return true;}catch(e){}await sleep(25);}return false;};
+S.settled=function(){return document.documentElement.getAttribute("data-graph-settled")==="1";};
+S.graphSvg=function(){var tab=document.getElementById("tab-graph");if(!tab)return null;
+  var best=null,area=0;tab.querySelectorAll("svg").forEach(function(s){var r=s.getBoundingClientRect();
+  if(r.width*r.height>area){area=r.width*r.height;best=s;}});return best;};
+function shown(el){if(!el||!el.isConnected)return false;
+  for(var e=el;e&&e.nodeType===1;e=e.parentElement){var cs=getComputedStyle(e);
+    if(cs.display==="none"||cs.visibility==="hidden")return false;}
+  var r=el.getBoundingClientRect();return r.width>0||r.height>0;}
+S.shown=shown;
+function box(r){return [Math.round(r.left),Math.round(r.top),Math.round(r.right),Math.round(r.bottom)];}
+// Every drawn node mark, and every drawn node label, inside the pane's box.
+S.fitReport=function(){var svg=S.graphSvg();
+  if(!svg)return {status:"not exercised",detail:"no graph drawn"};
+  var p=svg.getBoundingClientRect(),tol=0.5,out=[],n=0,lab=0,on=0,ol=0;
+  function inside(r){return r.left>=p.left-tol&&r.top>=p.top-tol&&r.right<=p.right+tol&&r.bottom<=p.bottom+tol;}
+  svg.querySelectorAll("circle").forEach(function(c){if(!shown(c))return;n++;
+    var r=c.getBoundingClientRect();if(!inside(r)){on++;out.push(["node",box(r)]);}});
+  svg.querySelectorAll("[class~=node-labels] text,[class~=node] text").forEach(function(t){if(!shown(t))return;lab++;
+    var r=t.getBoundingClientRect();if(!inside(r)){ol++;out.push(["label",box(r)]);}});
+  return {status:n?(out.length?"failed":"passed"):"not exercised",nodes:n,labels:lab,outside_nodes:on,outside_labels:ol,
+          pane:[Math.round(p.width),Math.round(p.height)],sample:out.slice(0,5)};};
+var probe=null;
+function norm(v){if(!probe){probe=document.createElement("div");probe.style.display="none";document.body.appendChild(probe);}
+  probe.style.color="";probe.style.color=v;return getComputedStyle(probe).color;}
+S.norm=norm;
+// A stroke the DATA set (an attribute or inline style on the mark) against the stroke the
+// browser actually paints. A stylesheet rule that overrides a presentation attribute shows
+// up here and nowhere else: the attribute itself still reads correctly.
+S.strokeReport=function(selector){var svg=S.graphSvg();var checked=0,bad=[],colors={};
+  if(!svg)return {checked:0,bad:[],colors:0};
+  svg.querySelectorAll(selector).forEach(function(el){if(!shown(el))return;
+    var want=el.style.stroke||el.getAttribute("stroke"),wantW=el.style.strokeWidth||el.getAttribute("stroke-width");
+    if(!want&&!wantW)return;checked++;var cs=getComputedStyle(el),off=false;
+    if(want){colors[norm(want)]=1;
+      if(want==="none"?cs.stroke!=="none":norm(want)!==norm(cs.stroke))off=true;}
+    if(wantW&&Math.abs(parseFloat(wantW)-parseFloat(cs.strokeWidth))>0.01)off=true;
+    if(off)bad.push([want,wantW,cs.stroke,cs.strokeWidth]);});
+  return {checked:checked,bad:bad.slice(0,5),mismatches:bad.length,colors:Object.keys(colors).length};};
+S.drawnNames=function(){var svg=S.graphSvg(),names={};
+  if(svg)svg.querySelectorAll("title").forEach(function(t){names[t.textContent.trim()]=1;});return names;};
+S.modeToggle=function(){var ins=document.querySelectorAll("#tab-graph input[type=checkbox]");
+  for(var i=0;i<ins.length;i++){var l=ins[i].closest("label");
+    if(l&&/only entities with relationships/i.test(l.textContent))return ins[i];}return null;};
+S.redraw=async function(fn,ms){var old=S.graphSvg();fn();
+  return S.until(function(){return S.graphSvg()!==old&&S.settled();},ms||60000);};
+function firstText(h){for(var c=h.firstChild;c;c=c.nextSibling){if(c.nodeType===3&&c.nodeValue.trim())return c.nodeValue.trim();}
+  return h.textContent.trim();}
+function dialogText(){var ds=document.querySelectorAll("[role=dialog],dialog[open],.modal");
+  for(var i=0;i<ds.length;i++){if(shown(ds[i]))return ds[i].textContent;}return null;}
+function closeDialog(){if(typeof closeModal==="function"){try{closeModal();return;}catch(e){}}
+  document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}));}
+// Open the Records action of entities the snapshot offers that the graph did not draw.
+S.recordsReport=async function(drawn,want){
+  if(typeof activate==="function")activate("probe");
+  else{var nb=document.getElementById("navbtn-probe");if(nb)nb.click();}
+  await sleep(300);
+  var all=Array.prototype.slice.call(document.querySelectorAll("#tab-probe button"));
+  var browse=all.filter(function(b){return /show all merged entities/i.test(b.textContent);})[0];
+  if(!browse)return {status:"not exercised",detail:"no \"Show all merged entities\" browse"};
+  browse.click();await sleep(500);
+  var known=Object.keys(drawn||{}).length>0,cands=[],offered=0;
+  document.querySelectorAll("#tab-probe button").forEach(function(b){if(b.textContent.trim()!=="Records")return;offered++;
+    var card=b.parentElement;while(card&&card.id!=="tab-probe"&&!card.querySelector("h1,h2,h3,h4,h5,h6"))card=card.parentElement;
+    var h=card&&card.querySelector("h1,h2,h3,h4,h5,h6");var name=h?firstText(h):"";
+    if(!known||!drawn[name])cands.push({b:b,name:name});});
+  var picked=cands.slice(-(want||3)),checked=[],failed=[];
+  for(var i=0;i<picked.length;i++){closeDialog();await sleep(50);picked[i].b.click();
+    var txt=null;await S.until(function(){txt=dialogText();return txt&&!/Loading/.test(txt);},5000);
+    checked.push(picked[i].name);
+    if(!txt||/not found|no such entity|No records returned/i.test(txt))failed.push([picked[i].name,(txt||"no dialog opened").slice(0,160)]);}
+  closeDialog();
+  return {status:checked.length?(failed.length?"failed":"passed"):"not exercised",
+          outside_cap_known:known,offered:offered,offered_outside_graph:cands.length,checked:checked,failed:failed,
+          detail:checked.length?"":(offered?"the merge browse offers no entity the graph left out"
+                                            :"the merge browse drew no entity with a Records action")};};
+S.stamp=function(rep){document.documentElement.setAttribute("data-sz-scale-check",JSON.stringify(rep));};
+})();
+</script>
+"""
+
+_SCALE_RUN = r"""<script>
+(async function(){
+var S=window.__szScale,rep={pane:__PANE__,checks:{}};
+try{
+  if(!(await S.until(function(){return S.settled();},90000))){
+    rep.error="the Entity Graph never reported settled (data-graph-settled, INV-298)";S.stamp(rep);return;}
+  var tab=document.getElementById("tab-graph");
+  rep.capped=/the graph is capped/i.test(tab?tab.textContent:"");
+  if(!rep.capped){S.stamp(rep);return;}
+  var toggle=S.modeToggle(),fits={},edges=null,drawn={};
+  async function look(){var net=!!(toggle&&toggle.checked),mode=net?"network":"all";
+    fits[mode]=S.fitReport();
+    if(net){var e=S.strokeReport("line"),c=S.strokeReport("circle");edges={edges:e,outlines:c};}
+    else drawn=S.drawnNames();}
+  await look();
+  if(toggle){if(await S.redraw(function(){toggle.click();}))await look();
+             else fits.toggle={status:"failed",detail:"the mode toggle's redraw never settled"};}
+  var fs=Object.keys(fits).map(function(k){return fits[k].status;});
+  rep.checks.fit_in_pane={status:fs.indexOf("failed")>=0?"failed":(fs.indexOf("passed")>=0?"passed":"not exercised"),modes:fits};
+  if(!edges)rep.checks.edge_colors={status:"not exercised",detail:"no relationship mode to draw"};
+  else{var bad=edges.edges.mismatches+edges.outlines.mismatches;
+    rep.checks.edge_colors={status:bad?"failed":(edges.edges.checked?"passed":"not exercised"),
+      detail:edges.edges.checked?"":"no relationship edge carries a stroke the data set",
+      edges:edges.edges,outlines:edges.outlines};}
+  rep.checks.records_beyond_cap=await S.recordsReport(drawn,3);
+}catch(e){rep.error=String(e&&e.stack||e);}
+S.stamp(rep);
+})();
+</script>
+"""
+
+
+def _scale_check_page(source: str, run: bool = True, pane: int = SCALE_PANE_PX) -> str:
+    """``source`` with the scale check injected: frames through ``setTimeout`` and the pane
+    width at the top of ``<head>``, the measurements (and, with ``run``, the check) before
+    ``</body>``."""
+    head = _SCALE_HEAD.replace("__PANE__", str(int(pane)))
+    tail = _SCALE_BODY + (_SCALE_RUN.replace("__PANE__", str(int(pane))) if run else "")
+    found = re.search(r"<head(?:\s[^>]*)?>", source, re.I)
+    if found:
+        source = source[: found.end()] + head + source[found.end():]
+    else:
+        source = head + source
+    if "</body>" in source:
+        return source.replace("</body>", tail + "</body>", 1)
+    return source + tail
+
+
+def _parse_scale_report(dom: str):
+    """The report the injected check stamped on the document element, or None."""
+    import html as _html
+
+    found = _SCALE_CHECK_RE.search(dom or "")
+    if not found:
+        return None
+    try:
+        return json.loads(_html.unescape(found.group(1)))
+    except ValueError:
+        return None
+
+
+def _scale_dom(exe: str, page: Path) -> str:
+    """Load ``page`` in headless Chrome and return the DOM after the virtual-time budget."""
+    done = subprocess.run(
+        [
+            exe,
+            "--headless=new",
+            "--no-sandbox",
+            "--disable-gpu",
+            "--hide-scrollbars",
+            "--window-size=1280,900",
+            f"--virtual-time-budget={_SCALE_VIRTUAL_TIME_MS}",
+            "--dump-dom",
+            _to_url(str(page)),
+        ],
+        check=False,
+        capture_output=True,
+        timeout=600,
+    )
+    return done.stdout.decode("utf-8", "replace")
+
+
+def run_scale_check(html: Path, exe=None, pane: int = SCALE_PANE_PX) -> dict:
+    """Run the scale check against the snapshot at ``html``; return its report.
+
+    ``{"status": "skipped", ...}`` when no headless Chrome/Chromium is found: the check reads
+    the DOM, which only Chrome's CLI exposes among this helper's backends.
+    """
+    exe = exe or _chrome_exe()
+    if exe is None:
+        return {"status": SCALE_SKIPPED, "reason": "no headless browser (Chrome/Chromium/Edge) was found"}
+    source = html.read_text(encoding="utf-8", errors="surrogateescape")
+    handle, path = tempfile.mkstemp(prefix=f".{html.stem}-scale-", suffix=".html", dir=str(html.parent))
+    os.close(handle)
+    temp = Path(path)
+    try:
+        temp.write_text(_scale_check_page(source, pane=pane), encoding="utf-8", errors="surrogateescape")
+        report = _parse_scale_report(_scale_dom(exe, temp))
+    except Exception as exc:  # best-effort, INV-122: report, never crash the module
+        report = {"error": f"the browser run failed: {exc}"}
+    finally:
+        try:
+            temp.unlink()
+        except OSError:
+            pass
+    if report is None:
+        report = {"error": "the page never stamped a result (the injected check did not finish)"}
+    return report
+
+
+def scale_verdict(report: dict) -> tuple:
+    """``(exit code, [(check, status, detail)])`` for a scale-check report.
+
+    ⛔ **A check that did not run is never a pass** (INV-265, INV-163): no browser is
+    ``skipped``; a check with nothing to look at -- no relationship edges, no entity outside
+    the graph in the merge browse, a layout that never settled -- is ``not exercised``. Only
+    an uncapped graph owes no check at all, and it says so rather than "passed".
+    """
+    if report.get("status") == SCALE_SKIPPED:
+        return SCALE_EXIT_SKIPPED, [(c, SCALE_SKIPPED, report.get("reason", "")) for c in SCALE_CHECKS]
+    if report.get("error"):
+        return SCALE_EXIT_NOT_EXERCISED, [(c, SCALE_NOT_EXERCISED, report["error"]) for c in SCALE_CHECKS]
+    if report.get("capped") is False:
+        return SCALE_EXIT_PASSED, [("graph", "not capped", "the scale checks apply only to a capped graph")]
+    rows, statuses = [], []
+    for check in SCALE_CHECKS:
+        entry = (report.get("checks") or {}).get(check) or {}
+        status = entry.get("status") or SCALE_NOT_EXERCISED
+        statuses.append(status)
+        rows.append((check, status, _scale_detail(check, entry)))
+    if SCALE_FAILED in statuses:
+        return SCALE_EXIT_FAILED, rows
+    if any(s != SCALE_PASSED for s in statuses):
+        return SCALE_EXIT_NOT_EXERCISED, rows
+    return SCALE_EXIT_PASSED, rows
+
+
+def _scale_detail(check: str, entry: dict) -> str:
+    if entry.get("detail"):
+        return str(entry["detail"])
+    if check == "fit_in_pane":
+        parts = []
+        for mode, fit in sorted((entry.get("modes") or {}).items()):
+            parts.append(
+                "%s: %s of %s nodes and %s of %s labels outside a %s px pane"
+                % (mode, fit.get("outside_nodes", "?"), fit.get("nodes", "?"),
+                   fit.get("outside_labels", "?"), fit.get("labels", "?"),
+                   (fit.get("pane") or ["?"])[0])
+            )
+        return "; ".join(parts)
+    if check == "edge_colors":
+        edges, outlines = entry.get("edges") or {}, entry.get("outlines") or {}
+        return "%s of %s edge strokes and %s of %s node outlines not painted as the data set them" % (
+            edges.get("mismatches", "?"), edges.get("checked", "?"),
+            outlines.get("mismatches", "?"), outlines.get("checked", "?"))
+    if check == "records_beyond_cap":
+        failed = entry.get("failed") or []
+        return "%d of %d entities outside the graph opened their records%s" % (
+            len(entry.get("checked") or []) - len(failed), len(entry.get("checked") or []),
+            ("; failed: " + ", ".join(str(f[0]) for f in failed)) if failed else "")
+    return ""
+
+
+def verify_scale_main(html: Path) -> int:
+    """`--verify-scale`: print one line per check and return the verdict's exit code."""
+    report = run_scale_check(html)
+    code, rows = scale_verdict(report)
+    for check, status, detail in rows:
+        print(f"scale-check: {check}\t{status}\t{detail}")
+    if code == SCALE_EXIT_SKIPPED:
+        print(
+            "skipped: no headless browser — the scale check needs headless Chrome, Chromium or "
+            "Edge to read the snapshot's DOM. Record it as skipped and name it at closing "
+            "(INV-163); never report it as passed.",
+            file=sys.stderr,
+        )
+    elif code == SCALE_EXIT_FAILED:
+        print(
+            "The snapshot failed a scale check. Fix the rule the failing check names "
+            "(visualization-api-reference.md → \"Graph rendering — labels, scale, and legends\"), "
+            "rebuild the snapshot and run this check again before capturing screenshots.",
+            file=sys.stderr,
+        )
+    elif code == SCALE_EXIT_NOT_EXERCISED:
+        print(
+            "A scale check could not be exercised on this snapshot; that is not a pass "
+            "(INV-265). Record which one and why, and name it at closing (INV-163).",
+            file=sys.stderr,
+        )
+    return code
+
+
 def capture(
     target: str,
     out_dir: Path,
@@ -1394,7 +1742,30 @@ def main(argv=None) -> int:
         help="Search text for the Search / Probe tab; requires --url (the static "
         "snapshot has no engine to search).",
     )
+    ap.add_argument(
+        "--verify-scale",
+        action="store_true",
+        help="Capture nothing: check the snapshot's interactive Entity Graph at a "
+        f"{SCALE_PANE_PX}px pane when its graph is capped -- records of an entity outside the "
+        "graph open, every drawn node is inside the pane after the first fit, and "
+        "relationship-mode edges paint their type colors. Requires --html. Exit 0 passed "
+        "(or not capped), 1 a check failed, 2 skipped (no headless browser), 3 a check "
+        "could not be exercised.",
+    )
     args = ap.parse_args(argv)
+
+    if args.verify_scale:
+        if not args.html or args.tabs or args.single or args.query:
+            print(
+                "--verify-scale checks a saved snapshot: pass it with --html, and no "
+                "--tabs, --single or --query.",
+                file=sys.stderr,
+            )
+            return 1
+        if not Path(args.html).is_file():
+            print(f"no such HTML file: {args.html}", file=sys.stderr)
+            return 1
+        return verify_scale_main(Path(args.html))
 
     if args.single and args.tabs:
         print(

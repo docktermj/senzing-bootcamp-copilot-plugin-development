@@ -118,6 +118,20 @@
         "commit": "9466b0a36e98d405ceecb95af48fd55e5bbbf34b"
       },
       "reason": "Backport the parent-approved wording correction while preserving the pinned 0.6.1 table and count."
+    },
+    {
+      "id": "module-07-visualization-scale",
+      "issue": "https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development/issues/21",
+      "patch": "tools/bootcamp-transform/patches/module-07-visualization-scale.patch",
+      "upstream": {
+        "issue": "https://github.com/docktermj/senzing-bootcamp-claude-plugin-development/issues/883",
+        "commits": [
+          "203a06ea25226c22a9fc49091d77be92e8358476",
+          "22202a982832dd50c9c5d708a2ef18df7a80b534",
+          "a80c0e953017afa7a449c50a700c608215d6259b"
+        ]
+      },
+      "reason": "Backport only the #463 and #675 prerequisites and #883 visualization fix until the pinned parent tag contains them; preserve the pinned graph cap and ranking."
     }
   ],
   "substitutions": [

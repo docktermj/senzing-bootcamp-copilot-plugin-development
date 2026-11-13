@@ -537,6 +537,19 @@ Unlike `why`/`how`, this endpoint's data MUST also be **embedded in the standalo
 the Records action works offline — it needs no engine call at view time, only the record data
 already gathered when the model was built.
 
+⛔ **The embedded records index MUST cover every entity the snapshot still offers** — every
+entity carried by an embedded graph node, by the merge browse, by the largest-entities list or
+by any aggregate drill-down list — and not only the entities the graph node cap kept. The graph
+payload bounds what is *rendered*, never what can be *looked up*: an index built from
+`graph.nodes` alone answers `not found: no such entity` for an entity the same page is still
+listing, so a bootcamper browses a valid entity and is then told it does not exist. Implementations
+MAY build the index however they like — the reference indexes the surfaces that already carry
+their own records and embeds the remainder once, so no record array ships twice — but the
+census MUST be the surfaces the snapshot retains. The node cap and the per-list caps stay
+exactly as they are: the repair is to the lookup's denominator, never to what is shown, and an
+entity **no** retained surface offers still answers `not found: no such entity` rather than
+being invented.
+
 **`GET /api/overlap`:** Cross-source overlap matrix — how many resolved entities each pair of data
 sources shares
 
@@ -681,6 +694,15 @@ highest bars all render as the same trailing fragment and cannot be told apart �
 labels useless, chart looking fine. Required behavior:
 
 - Size the label gutter from the longest key present, up to a cap, before truncating anything.
+- ⛔ **(INV-153) No label glyph may start left of the chart's left edge.** Size the gutter from the
+  **rendered** width of the labels: measure the label font's per-character advance in the font the
+  labels are drawn in (the reference measures it once with a canvas `measureText`), or, where it
+  cannot be measured, estimate it at **no less than 0.62 em**. Use that one advance for both the
+  gutter and the truncation limit. A fixed estimate below the font's real advance clips the head of a
+  right-anchored label, the part that distinguishes it: the reference once assumed 5.9 px per
+  character at 11 px, against about 6.6 px, and its 25-character key started 11 px left of the edge.
+  A disambiguating suffix counts inside the width budget: fit the key to the limit minus the suffix's
+  length, then append it.
 - **Middle-ellipsize** (`+NAME+ADDRESS+NATIONAL_ID+…RATION_COUNTRY+LEI_NUMBER`); never trim from the
   left. Right-truncation alone is **not** sufficient: match keys are `+A+B+C…` sequences that
   commonly share a long prefix and differ only in the final segment, so head-only truncation renders
@@ -994,6 +1016,8 @@ restate it (INV-300).
   **2–3 px**. ⚠️ **Leave the interactive view alone** — a real browser advances animation frames
   normally, so a reader opening the app or the standalone snapshot already gets a settled layout,
   and applying the capture's label ceiling there would degrade a view they can zoom and toggle.
+  The fit alone also reaches the interactive view, once, at its first settle — see
+  [the initial fit](#graph-initial-fit) below; the synchronous settle and the label ceiling do not.
   ⚠️ **Suppress both label sets through your own auto-off mechanism**, not a bespoke hide on the
   name layer: the interactive ceiling governs entity names *and* match keys together, and reusing
   it keeps the on-screen toggles honest about what was actually drawn.
@@ -1010,6 +1034,33 @@ restate it (INV-300).
   variable.** The Python reference held its simulation in a top-level `let`, which never reaches
   `window`, so nothing outside the page's own script could observe it — an attribute is
   observable by any driver in any language, which is the whole point of putting the rule here.
+- <a id="graph-initial-fit"></a>**The graph opens fitted, once, and then the view is the reader's (required —
+  INV-002/INV-090).** ⛔ **(INV-002/INV-090) When a layout first settles, fit every drawn node inside the graph
+  pane — its marker, and its label while labels are drawn — in the live app and in the standalone
+  snapshot, in both modes.** Key the fit to that first settle (the moment the settled signal above is
+  first set for the layout), never to a timer. ⛔ **(INV-002/INV-090) The zoom floor follows the fit:**
+  where the fit needs a smaller scale than the floor the reader zooms down to, lower the floor to the
+  fit's scale, so the fit is never clamped, and keep the floor where it does not. ⛔ **(INV-002/INV-090)
+  Fit that layout once:** a later settle — a dragged node re-heats the layout — never refits, and a
+  reader who zooms or pans **before** the first settle keeps their view, because that settle does
+  not fit either. A mode toggle that redraws the graph is a new layout and gets its own first fit;
+  a legend filter only hides marks and never refits. An empty graph has nothing to fit; a single
+  node fits at the maximum zoom. The capture render's synchronous fit above is the same fit, run at
+  its synchronous settle. Observed at 1,500 nodes (#883): only the capture fitted, so the app and
+  the snapshot opened at scale 1 with most of the graph outside a narrow pane, and a fixed 0.05
+  floor would have clamped a fit wider than twenty panes.
+- <a id="stroke-precedence"></a>**A stroke the data sets is the stroke that is painted (required —
+  INV-002/INV-090).** ⛔ **(INV-002/INV-090) No stylesheet rule may override a stroke color or width
+  the renderer sets from the data** — the relationship type on an edge, the source set on a node
+  outline ("Coloring graph nodes"). ⚠️ **An SVG presentation attribute (`stroke="…"`,
+  `stroke-width="2"`) loses to every matching CSS rule**, so a default such as
+  `.edge line{stroke:…;stroke-width:1.5px}` repaints every edge while the DOM attribute still reads
+  correctly: only the browser's **computed** style shows it, which is what a check must read.
+  Scope a default to marks the data gave no stroke (the reference writes `:not([stroke])`), or set
+  the data value as an inline style; defaults still apply where the data sets nothing, such as
+  edges in the full-population mode and single-source nodes in the first six. Observed (#883):
+  relationship-mode edges painted gray at 1.5px over their type colors at 2px, and the 7th and
+  later sources, which the stroke channel exists to tell apart, all painted a white 1.5px outline.
 - **Collision must account for the label's extent, not just the marker (required).** Size the
   collision/overlap pass from the rendered label as well as the marker, and apply it **only while
   labels are actually shown** — inflating it for text nobody renders over-separates a
@@ -1141,7 +1192,10 @@ not only in the live app. The snapshot's Search / Probe body MUST therefore incl
 render and the snapshot silently loses the capability. The example-query **chips** are live-only by
 design — they drive the search box, which a static file does not have — so they are suppressed
 there rather than shipped as dead controls. **The Records action works offline too**, because `records` is embedded: it needs no
-engine call at view time, unlike `why`/`how`. The Feature Scores tab shows whatever was computed
+engine call at view time, unlike `why`/`how`. It resolves against the whole retained index —
+every entity any embedded surface offers, including the ones the graph node cap dropped — so an
+entity reachable through the merge browse or an aggregate drill-down is never reported as
+missing because its node was not rendered (see `GET /api/records` above). The Feature Scores tab shows whatever was computed
 (capped) at build time. (`dashboard` is no longer embedded — the endpoint was removed and its
 content folded into `stats`.)
 
@@ -1218,6 +1272,10 @@ collision this fixes; that is the error made while repairing it by hand, not a h
 
 **The legend MUST name each combination** it colors (INV-259), labeled as a combination and counted over the
 nodes actually drawn. A color a viewer cannot name is not an improvement over the wrong color.
+
+The stroke and stroke width a node is assigned must also be what the browser paints: that rule is
+stated once, in "Graph rendering — labels, scale, and legends" →
+[stroke precedence](#stroke-precedence) (INV-300).
 
 #### The encoding self-check (required — behavior, in every language)
 
