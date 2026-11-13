@@ -161,8 +161,8 @@
       "output": "b98d7261b58f6b14eb99f08271f1c9ac133d97c8617021ab701a176b1559c9de"
     },
     "scripts/senzing_viz_server.py": {
-      "generated": "48edc3f35747f9194ad5f8cbc489b9cb7431782efe764056762c9af736e55d75",
-      "output": "48edc3f35747f9194ad5f8cbc489b9cb7431782efe764056762c9af736e55d75"
+      "generated": "c266ff0aec84acf1b21725d18624e8767fe03fe139bb8b0fc272330958ccdeb5",
+      "output": "c266ff0aec84acf1b21725d18624e8767fe03fe139bb8b0fc272330958ccdeb5"
     },
     "scripts/session-end.py": {
       "generated": "ddc06a54ffbd33ae53f580546242147169165613260b53f64dd93359edfeea19",
@@ -344,7 +344,7 @@
     },
     {
       "id": "module-07-visualization-scale",
-      "sha256": "a7714ecf26c2a83b2d8f2add53c756caddb632e52f914ee20d50689d8c5ea958"
+      "sha256": "2809f54f3e7691a9c558524943fc5e7f53c3578bc1c39897006ac634e6b71d07"
     }
   ]
 }

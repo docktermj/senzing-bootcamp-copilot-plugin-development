@@ -1244,7 +1244,7 @@ async function drawGraph(){
   // well under 0.2 to fit, and clamping there would leave nodes off-canvas. 0.05 is the floor
   // a reader zooms down to; `fitToExtent` lowers it further only when a fit needs it (#883).
   // ⛔ (#883) The reader's own zoom or pan is remembered, per layout: d3 sets `sourceEvent`
-  // only on an input event (wheel, drag, dblclick, touch), never on the programmatic
+  // only on an input event (wheel, drag, double-click, touch), never on the programmatic
   // `zoomB.transform` the fit applies, so a fit cannot mark itself as the reader's choice.
   let readerMoved=false,fitted=false;
   const zoomB=d3.zoom().scaleExtent([0.05,4]).on("zoom",function(ev){
