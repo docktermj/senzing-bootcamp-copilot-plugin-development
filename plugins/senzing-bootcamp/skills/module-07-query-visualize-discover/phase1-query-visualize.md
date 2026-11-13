@@ -792,7 +792,7 @@ of the Truth Set. It MUST:
     ⚠️ **The DEFAULT-composite caution is not waived — it is relocated.** Membership can still
     shift between versions with no error, which matters for the code that *leaves* with the
     Bootcamper: `production/MIGRATION_CHECKLIST.md` carries it as a Performance item, and that
-    item's own carve-out says the export call is where the replacement must not be applied
+    item's own qualification says the export call is where the replacement must not be applied
     blindly.
 - Keep all generated code and output inside the working directory (`src/server/` for code, HTML →
   `docs/visualizations/`, other output → `docs/` or `data/`; never `/tmp/`); pull
