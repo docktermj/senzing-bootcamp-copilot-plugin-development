@@ -967,6 +967,60 @@ it produces silently suppressed merges that only the post-load match-key audit w
 > **Availability-aware mapping validation:** `mapping_workflow` advertises three validation
 > scripts. Run them by availability: do NOT treat any one as a hard blocking gate.
 >
+> **Analyzer Python requirement for `sz_json_analyzer.py` only:** The live analyzer
+> resource requires Python 3.10 or newer. Before the first analyzer run, check
+> `python3 --version` where the analyzer runs: inside the container on the `docker`
+> route, and on the host on a native route. Windows uses `python3` too.
+>
+> At **3.10 or newer**, run the returned `analyze_record` command with `python3`;
+> do not probe or ask about installation. **Below 3.10**, do not run it with
+> `python3`: first look for a compatible interpreter that is already installed.
+>
+> **The probe, below 3.10 only:** try `python3.13`, `python3.12`, `python3.11`
+> and `python3.10` from `PATH`, newest first, each with `--version`, on every
+> platform and where the analyzer runs. On Windows try the same four names; do
+> not try any `py` launcher form. Use the first that reports 3.10 or newer.
+> Silently skip a candidate that fails or reports below 3.10, and continue the
+> probe. Search nothing outside `PATH`. If `python3` cannot be run or its version
+> cannot be read, still try the four versioned names. Nothing is saved across
+> sessions: after resuming, run the check and probe again. This interpreter
+> choice applies only to `sz_json_analyzer.py`; the schema-generator,
+> verbatim-check and routing-report scripts keep `python3`, with no floor
+> claimed for them.
+>
+> **The probe finds one:** say in one line, and ask nothing, that `python3` here
+> is {version} and the analyzer will use installed {interpreter} ({its version}).
+> Run the command returned by `analyze_record` with that interpreter named
+> explicitly in place of `python3`.
+>
+> **The probe finds none:** say plainly that the analyzer requires Python 3.10
+> or newer and which version `python3` is here (or that it is unavailable), then
+> end the turn on this one question:
+>
+> 👉 **The mapping analyzer needs Python 3.10 or newer, and the `python3` here is {version}. Shall I install a newer Python alongside it so the analyzer can run?** (respond yes or no)
+>
+> - **Yes:** install Python 3.10 or newer alongside the existing `python3`, never
+>   replacing it, using Homebrew on macOS, the distribution's package manager
+>   on Linux (inside the container on the `docker` route), or the python.org
+>   installer or `winget` on Windows. Show commands requiring administrator
+>   rights for the Bootcamper to run. Confirm the new interpreter with
+>   `--version`, then run with that interpreter named explicitly for every later
+>   analyzer run. If installation fails, take the **No** path.
+> - **No:** say the analyzer is skipped because Python 3.10 or newer was not
+>   found, record the skip and reason in the source's mapping notes, and continue
+>   with `sz_verbatim_check.py` and `sz_routing_report.py` under their optional
+>   best-effort handling. The skip stands for the rest of the session; do not ask
+>   again unless the Bootcamper asks to install one.
+>
+> **Later analyzer runs:** Step 14 and Phase 3's pre-load validation
+> (`phase3-test-load.md` → "Rules") use the same `analyze_record` command. If the
+> check was bypassed in this session or the session resumed without its outcome,
+> run the check and probe there before the analyzer, with the
+> same question and yes/no paths. If the check already ran, reuse its outcome
+> and ask nothing: use `python3` at 3.10 or newer; after **Yes** or a compatible
+> probe result, use the selected interpreter explicitly; after **No**, skip the
+> analyzer at every later site. Do not retain the selection across sessions.
+>
 > 1. **`sz_json_analyzer.py` (primary validation):** structural + Entity-Specification
 >    validation, currently hosted (HTTP 200). When available, run it and use its result as the
 >    authoritative check **for what it actually measures** — conformance to the *recommended*
