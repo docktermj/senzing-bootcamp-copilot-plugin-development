@@ -128,8 +128,13 @@ def plan_release(root: Path, version: str, notes: str, branch: str) -> dict[str,
     match = SEMVER.fullmatch(version)
     current = inside(root, "RELEASE_VERSION").read_text().strip()
     current_match = SEMVER.fullmatch(current)
-    if not match or not current_match or tuple(map(int, match.groups())) <= tuple(map(int, current_match.groups())):
-        raise ValueError("Release version must be an exact, increasing stable SemVer version")
+    if not match or not current_match:
+        raise ValueError("Release version must be an exact stable SemVer version")
+    version_key = tuple(map(int, match.groups()))
+    current_key = tuple(map(int, current_match.groups()))
+    if version_key < current_key:
+        raise ValueError("Release version must not be older than the configured version")
+    initial_release = version_key == current_key
     if not notes.strip():
         raise ValueError("Release notes are required")
     if git(root, "tag", "--list", version, f"v{version}").strip():
@@ -152,6 +157,17 @@ def plan_release(root: Path, version: str, notes: str, branch: str) -> dict[str,
         raise ValueError("Release already appears in the changelog")
     if not changelog.startswith("# Changelog\n"):
         raise ValueError("Expected a # Changelog heading")
+    if initial_release:
+        unreleased = re.search(r"(?ms)^## \[Unreleased\][ \t]*\n(.*?)(?=^## \[|\Z)", changelog)
+        if not unreleased:
+            raise ValueError("Initial release requires an Unreleased section")
+        unreleased_notes = unreleased.group(1).strip()
+        bullets = [line for line in unreleased_notes.splitlines() if line.strip()]
+        if len(bullets) != 1 or not bullets[0].startswith("- "):
+            raise ValueError("Initial release requires exactly one Unreleased bullet")
+        if unreleased_notes != notes.strip():
+            raise ValueError("Initial release notes must exactly match the Unreleased bullet")
+        changelog = changelog[:unreleased.start(1)] + "\n" + changelog[unreleased.end(1):]
     updates = {
         "RELEASE_VERSION": f"{version}\n".encode(), PLUGIN_MANIFEST: manifest_data,
         ".build-manifest.json": json_bytes(build),
