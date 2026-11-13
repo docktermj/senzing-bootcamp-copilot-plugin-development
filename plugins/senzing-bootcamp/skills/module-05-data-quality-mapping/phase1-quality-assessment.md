@@ -545,7 +545,10 @@ weight.
   94.4% averaged over all 19 root keys.)
 
 - **format_consistency (0-100)** — the share of populated values that match their field's dominant
-  observed pattern (date shape, postal-code shape, casing of a coded value). Report the fields that
+  observed pattern (date shape, postal-code shape, casing of a coded value). A value that a
+  correction on the closed list in [Step 7b's final pass](#the-final-pass) can change counts as
+  off-pattern too, even where none of those patterns names it (an email, for instance), so the
+  score shows the variant before it is corrected and the correction after. Report the fields that
   drag it down; a single malformed field is more actionable than the aggregate.
 - **duplicate_rate (0-100)** — the share of records whose `(DATA_SOURCE, RECORD_ID)` pair is not
   unique. ⛔ **Compute it on that pair, never on whole-row equality** (INV-180): re-sending the same
@@ -1073,7 +1076,8 @@ advisory, so treat this as executable, not advisory.
    changed, so this is a new question about a new state, and the Bootcamper's earlier answer was
    about the old figure. Present whichever band's pinned question the **new** score selects — a
    source that crossed into ≥80% gets no question at all and continues into Phase 2 this turn. A
-   pass that fixed everything leaves nothing mechanical, so the band's form is Step 7b's.
+   pass that fixed everything leaves nothing mechanical, so the band's form is Step 7b's. Step 7b's
+   final pass confirms that before its form is presented.
 
 6. **When nothing was fixable, say so rather than looping.** If the gaps are entirely completeness,
    there is no mechanical work to do: say so, and never re-present an unchanged score as an
@@ -1096,8 +1100,42 @@ presented: the first time, after a Step 7a pass that fixed everything, and after
 nothing. **Nothing mechanical is left to fix** when Step 6's measures for this source show
 `format_consistency` at 100% **and** no repeated `(DATA_SOURCE, RECORD_ID)` pair, the only two
 dimensions Step 7a step 2 calls fixable here, or when a Step 7a pass has just found nothing it
-could fix. Then this step's form of the band replaces the band's question. Where mechanical work
-remains, present the band's question above unchanged.
+could fix. Either reading stands only once the final pass below has found nothing. Then this step's
+form of the band replaces the band's question. Where mechanical work remains, present the band's
+question above unchanged. A source at 80% or more reaches no gate, so nothing is declared and no
+final pass runs.
+
+<a id="the-final-pass"></a>
+
+⛔ **(INV-284) The final pass: nothing mechanical is left to fix only once it finds nothing.** Run it
+once each time this check is about to declare that nothing mechanical is left to fix: the first
+time, after a Step 7a pass that fixed everything, and after one that found nothing. Only its result
+decides whether the declaration stands. It checks every applicable field Step 6 measured for this
+source, emails included, not only the fields Step 6 named as dragging the score down, so it can find
+a variant an earlier Step 7a pass missed.
+
+**The closed list of corrections (INV-300: stated here only; Step 6 points to it).** Each is
+value-preserving and derived only from the same record's raw value, with nothing from another
+record or an outside source:
+
+- leading or trailing whitespace trimmed, and inner runs of whitespace collapsed;
+- an email's domain lower-cased, and a `mailto:` prefix or enclosing angle brackets removed (the
+  local part is left as it is);
+- phone punctuation and date layout made to match the field's dominant form;
+- coded values (state, country) cased to the field's dominant form.
+
+Nothing else is a correction here. A variant outside the list, such as an email's local part in a
+different case, is left as it is and is not reported as fixable. A missing value is never filled
+(Step 7a step 2), and a value that differs in meaning rather than in form is never normalized away.
+
+- **The pass finds corrections:** apply them through Step 7a steps 3 to 5 unchanged: a new improved
+  copy, every registry field it changes, and a re-score with Step 6's formula, with the before and
+  after shown. The gate is re-presented with the new score, and the next time this check is
+  reached, the pass runs again and must find nothing before this step's form stands.
+- **The pass finds nothing:** this step's form is presented as below, without looping, and the pass
+  is not repeated for the same file.
+
+On a `provenance: synthesized` source the pass runs the same way, as Step 7a does.
 
 ⛔ **(INV-284) Never offer an improvement option when nothing mechanical is left to fix.** Step 7a
 would find nothing to do and hand back the same gate, so the option is a dead choice that loops.
