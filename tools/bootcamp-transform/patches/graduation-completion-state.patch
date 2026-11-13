@@ -1,0 +1,721 @@
+diff --git a/scripts/transition_reply.py b/scripts/transition_reply.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/transition_reply.py
+@@ -0,0 +1,199 @@
++#!/usr/bin/env python3
++"""Shared detector: is the prompt being submitted a reply to the module transition question?
++
++Two ``UserPromptSubmit`` hooks act on the Bootcamper's reply to the pinned transition question
++("Are you ready to move on to the next module: {name}?", module-completion.md Step 4) or the
++graduation offer (module-completion.md "Reaching graduation"):
++
++- ``module-start-reminder.py`` (#851) reminds the guide of the module-start apparatus;
++- ``checkpoint-tick.py`` (#858) reminds the guide of a required record module completion left
++  missing.
++
++Both detect that reply here, so there is one detector and the two cannot disagree about
++which turn is a transition (#858). ``offered_module(payload)`` is the entry point; the record
++helpers below it are what it is built from.
++
++A third hook, ``module-number-reminder.py`` (#874), reads the same previous turn through
++``previous_turn_texts(payload)``: every assistant text of it, not only the final message,
++with the same gates 1 and 2 below. It shares the reader rather than carrying a second one.
++
++How the reply is recognized, gate by gate; every failed gate returns None:
++  1. The payload is a JSON object with a string ``transcript_path`` naming a readable,
++     UTF-8 transcript.
++  2. The previous turn has settled on a final assistant message: not a tool call, not a
++     tool result. Sidechain (subagent) and meta records are not the user-facing turn and
++     are skipped. The prompt being submitted is skipped if it is already on disk.
++  3. That message's last 👉 line is one of the two pinned questions.
++
++The reply itself is not classified: what each hook does with a "not yet" is its own
++decision. Biased toward silence like ``stop-nudge.py`` (INV-054): anything undecided returns
++None, and nothing here raises on bad input.
++
++This is NOT a hook. Python puts each hook script's own directory (this ``scripts/``
++directory) on ``sys.path``, so ``import transition_reply`` resolves here on Linux, macOS and
++Windows alike. Standard library only (INV-052).
++"""
++import json
++import re
++
++import module_start_apparatus
++
++POINTER = "\U0001f449"  # 👉
++
++#: The pinned transition question (INV-079). ``name`` is the module as written.
++TRANSITION = re.compile(
++    r"Are you ready to move on to the next module:\s*(?P<name>[^?]+?)\s*\?", re.I)
++
++#: The pinned graduation offer.
++GRADUATION_OFFER = re.compile(
++    r"Would you like to graduate now and generate your production project and recap\s*\?",
++    re.I)
++
++
++def content_of(rec):
++    """The message content of a transcript record, or None."""
++    msg = rec.get("message")
++    return msg.get("content") if isinstance(msg, dict) else None
++
++
++def message_text(rec):
++    """The visible text of a record, from a string or a list ``message.content``."""
++    content = content_of(rec)
++    if isinstance(content, list):
++        return "\n".join(
++            block.get("text", "") for block in content
++            if isinstance(block, dict) and block.get("type") == "text"
++            and isinstance(block.get("text"), str))
++    return content if isinstance(content, str) else ""
++
++
++def is_real_user_prompt(rec):
++    """True for a typed prompt; False for a tool-result carrier, which is a ``user`` record
++    whose content lists ``tool_result`` blocks and does not start a turn."""
++    if rec.get("type") != "user":
++        return False
++    content = content_of(rec)
++    if isinstance(content, str):
++        return True
++    if isinstance(content, list):
++        return not any(isinstance(block, dict) and block.get("type") == "tool_result"
++                       for block in content)
++    return False
++
++
++def ends_with_tool_use(rec):
++    """True when an assistant record's last text-or-tool block is a ``tool_use``."""
++    content = content_of(rec)
++    if not isinstance(content, list):
++        return False
++    kinds = [block.get("type") for block in content
++             if isinstance(block, dict) and block.get("type") in ("text", "tool_use")]
++    return bool(kinds) and kinds[-1] == "tool_use"
++
++
++def read_records(path):
++    """The transcript's JSON-object records, or None if it cannot be read. Bad lines are
++    skipped; an undecodable file is unreadable (``UnicodeDecodeError`` is a ValueError)."""
++    records = []
++    try:
++        with open(path, encoding="utf-8") as fh:
++            for line in fh:
++                line = line.strip()
++                if not line:
++                    continue
++                try:
++                    rec = json.loads(line)
++                except ValueError:
++                    continue
++                if isinstance(rec, dict):
++                    records.append(rec)
++    except (OSError, ValueError):
++        return None
++    return records
++
++
++def previous_turn(records):
++    """The previous turn's user-facing records, from just after the prompt that opened it to
++    its final assistant message, or None while it is undecided: nothing flushed, or a turn
++    still settling (its last record a tool call or a tool result). Sidechain (subagent) and
++    meta records are not the user-facing turn and are left out."""
++    turn = [rec for rec in records
++            if rec.get("type") in ("user", "assistant")
++            and not rec.get("isSidechain") and not rec.get("isMeta")]
++    if turn and is_real_user_prompt(turn[-1]):
++        turn.pop()  # the prompt being submitted, already on disk
++    if not turn:
++        return None
++    last = turn[-1]
++    if last.get("type") != "assistant" or ends_with_tool_use(last):
++        return None
++    start = len(turn)
++    while start > 0 and not is_real_user_prompt(turn[start - 1]):
++        start -= 1
++    return turn[start:]
++
++
++def previous_final_text(records):
++    """The previous turn's final assistant text, or None while it is undecided."""
++    turn = previous_turn(records)
++    return message_text(turn[-1]) if turn else None
++
++
++def previous_texts(records):
++    """Every non-empty assistant text of the previous turn, in order, or None while it is
++    undecided. The Bootcamper reads a text block written before a tool call as much as the
++    turn's final message (#874), so a check of what they saw reads all of them."""
++    turn = previous_turn(records)
++    if turn is None:
++        return None
++    texts = (message_text(rec) for rec in turn if rec.get("type") == "assistant")
++    return [text for text in texts if text]
++
++
++def offered_module_in(text):
++    """The module the message's last 👉 line offers to start, or None. The graduation offer
++    gives ``module_start_apparatus.GRADUATION_NAME``."""
++    lines = [line for line in text.splitlines() if POINTER in line]
++    if not lines:
++        return None
++    question = lines[-1]
++    if GRADUATION_OFFER.search(question):
++        return module_start_apparatus.GRADUATION_NAME
++    match = TRANSITION.search(question)
++    if match:
++        name = match.group("name").strip(" *_`")
++        return name or None
++    return None
++
++
++def payload_records(payload):
++    """The records of the transcript the hook's payload names, or None when the payload is
++    malformed, names no transcript, or names one that cannot be read. ``payload`` is the
++    hook's parsed stdin, of any type."""
++    transcript = payload.get("transcript_path") if isinstance(payload, dict) else None
++    if not isinstance(transcript, str) or not transcript:
++        return None  # malformed payload or no transcript -> undecided
++    return read_records(transcript)
++
++
++def previous_turn_texts(payload):
++    """Every assistant text of the previous turn, settled, read from the transcript the
++    payload names; None when that is undecided. ``module-number-reminder.py`` (#874) scans
++    these, so it reads the transcript the way the transition detector does."""
++    records = payload_records(payload)
++    if records is None:
++        return None
++    return previous_texts(records)
++
++
++def offered_module(payload):
++    """The module the previous turn's transition question or graduation offer named, when
++    the prompt being submitted replies to one; otherwise None. ``payload`` is the hook's
++    parsed stdin, of any type."""
++    records = payload_records(payload)
++    if records is None:
++        return None  # malformed payload, no transcript, or an unreadable one
++    final_text = previous_final_text(records)
++    if not final_text:
++        return None  # previous turn not settled, or nothing to read
++    return offered_module_in(final_text)
+
+diff --git a/scripts/module-number-reminder.py b/scripts/module-number-reminder.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/module-number-reminder.py
+@@ -0,0 +1,111 @@
++#!/usr/bin/env python3
++"""UserPromptSubmit hook: to keep modules named by their names after a module number slips
++into a reply (#874, INV-079).
++
++INV-079 has the guide name a module, never number it, and ``ground-rules.md`` says so. In two
++``auto-test`` walks the guide read that rule and still wrote "Module 5" to the Bootcamper,
++then kept doing it in later turns: the skill headings and descriptions it reads carry the
++number. A rule already read does not hold, so this hook catches the leak when it happens.
++When the guide's previous turn showed a module number, it puts a short reminder into the
++guide's context before the next reply, so the leak does not repeat. It never blocks: a number
++already shown stays shown, and the reminder tells the guide not to correct or apologize for
++it, and not to mention the reminder, so the Bootcamper never sees it.
++
++Gates, checked in order; every failed gate is silent (exit 0, no stdout):
++  1. ``config/bootcamp_progress.json`` exists. This gate tests the file's EXISTENCE on
++     purpose, not ``recap_checkpoint.bootcamp_active()``: existence answers "is this a
++     bootcamp project", not "is a bootcamp in progress" (INV-227). The onboarding preface
++     creates the file empty and nothing records a module until Bootcamp preparation's final
++     write, yet the preface and Bootcamp preparation are Bootcamper-facing and name modules
++     too (the same gate and reason as ``stop-nudge.py`` gate 2).
++  2. The bootcamp is not complete (``bootcamp_complete: true`` in the progress file or in
++     the preferences, set by graduation; ``module_start_apparatus.bootcamp_complete()``), as
++     ``stop-nudge.py`` gate 3b.
++  3. The payload names a readable, UTF-8 transcript, and the previous turn has settled on a
++     final assistant message, read by ``transition_reply.previous_turn_texts``: the same
++     reader the transition detector uses, so sidechain (subagent) and meta records are
++     skipped, and the prompt being submitted is skipped if it is already on disk.
++  4. A match of ``MODULE_NUMBER`` in ANY assistant text of that turn, not only its final
++     message: the Bootcamper reads a text block written before a tool call too. Text inside
++     fenced code is scanned as well, because the Bootcamper reads it.
++
++``MODULE_NUMBER`` is the pattern ``transcript_lint.check_module_numbers`` uses, so this hook
++and the linter agree on what a module number is; ``tests/test_module_number_reminder.py``
++fails if they differ. No state is kept between turns, so the reminder repeats on every turn
++that shows a number.
++
++Biased toward silence like ``stop-nudge.py`` (INV-054): a missed reminder costs less than a
++wrong one, so anything undecided is silent and nothing here raises on bad input.
++
++Cross-platform: invoked as a ``type: command`` hook whose ``command`` names the
++interpreter and this script, quoted (``python3 "<path>"``), per INV-052. The JSON on stdout
++is ASCII-escaped, so no console code page can break it.
++"""
++import json
++import os
++import re
++import sys
++
++import module_start_apparatus
++import transition_reply
++
++#: A module number as the Bootcamper would read it ("Module 5"). The same pattern as
++#: ``transcript_lint.check_module_numbers``, asserted equal by a test.
++MODULE_NUMBER = re.compile(r"\bModule\s+\d+\b")
++
++
++def hits_in(texts):
++    """Each distinct module number in ``texts``, in first-seen order, whitespace collapsed."""
++    seen = []
++    for text in texts:
++        for match in MODULE_NUMBER.finditer(text):
++            hit = " ".join(match.group(0).split())
++            if hit not in seen:
++                seen.append(hit)
++    return seen
++
++
++def reminder(hits):
++    """The reminder for ``hits``, quoting each one."""
++    quoted = ", ".join('"%s"' % hit for hit in hits)
++    return ("Module-name reminder: your previous reply showed the bootcamper a module "
++            "number (%s). From now on name every module by its name, as the module table in "
++            "bootcamp-preparation/SKILL.md spells it (for example \"SDK setup\" or \"Data "
++            "Quality, Mapping, and Transformation\"), never by a number (INV-079). Do not "
++            "correct or apologize for the earlier reply, and do not mention this reminder "
++            "to the bootcamper." % quoted)
++
++
++# Drain stdin first, whatever the gates decide: a hook that leaves it unread can break the
++# writer on some platforms. Read as bytes so a Windows console code page cannot fail the
++# decode; json.loads takes UTF-8 bytes directly.
++try:
++    payload = json.loads(sys.stdin.buffer.read())
++except (AttributeError, OSError, ValueError):
++    payload = None
++
++# Gate 1: a bootcamp project, recorded module or not (existence, on purpose; see above).
++if not os.path.isfile(os.path.join("config", "bootcamp_progress.json")):
++    sys.exit(0)
++
++# Gate 2: not after graduation has ended the bootcamp.
++if module_start_apparatus.bootcamp_complete():
++    sys.exit(0)
++
++# Gate 3: every assistant text of the previous turn, once it has settled.
++texts = transition_reply.previous_turn_texts(payload)
++if not texts:
++    sys.exit(0)  # undecided, or a turn with no text -> silent
++
++# Gate 4: a module number the Bootcamper read.
++hits = hits_in(texts)
++if not hits:
++    sys.exit(0)
++
++print(json.dumps({
++    "hookSpecificOutput": {
++        "hookEventName": "UserPromptSubmit",
++        "additionalContext": reminder(hits),
++    }
++}))
++sys.exit(0)
+
+diff --git a/scripts/module_start_apparatus.py b/scripts/module_start_apparatus.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/module_start_apparatus.py
+@@ -0,0 +1,247 @@
++#!/usr/bin/env python3
++"""Shared builder for the module-start apparatus reminder (#851, INV-420).
++
++The module-start apparatus (the banner, journey map, before/after framing, step overview,
++time estimate and model/effort nudge) is required at every content-module start and at
++graduation, and only the model's attention enforced it: one session skipped it at five of
++eight module starts. Two hooks now put a deterministic reminder into the guide's context at
++the moment it is due:
++
++- ``module-start-reminder.py`` (``UserPromptSubmit``), on the reply to a transition or
++  graduation question;
++- ``session-start.py`` (``SessionStart``), on a resume into a module that has not begun.
++
++Both build the reminder here, so its wording is stated once and the two cannot drift
++(INV-300). The rules it summarizes are owned by ``ground-rules.md`` ("Module start banners
++and transitions"), ``module-completion.md`` (Step 4 and "Reaching graduation") and the
++invariants cited in the text; this file only points the guide at them when they are due.
++
++It also holds the finished-bootcamp rule, ``bootcamp_complete()`` (#905): the flag in either
++the progress file or the preferences file, so every hook that asks "is the bootcamp over?"
++reads the same answer.
++
++It also holds each module's display name by state token (``DISPLAY_NAMES``, #874), so
++``session-start.py`` names the recorded module in its resume message rather than leaving the
++guide to improvise a name, which it did from the skill heading, number included (INV-079).
++
++Every reminder is conditional, so it never turns a "not yet" into a module start, and it
++is ASCII-only: ``session-start.py`` prints it as plain text, and a non-ASCII character on a
++Windows console code page would raise instead of printing.
++
++This is NOT a hook. Python puts each hook script's own directory (this ``scripts/``
++directory) on ``sys.path``, so ``import module_start_apparatus`` resolves here on Linux,
++macOS and Windows alike. Standard library only (INV-052). Nothing here raises on a missing,
++empty or malformed progress or preferences file.
++"""
++import json
++import os
++import re
++
++PROGRESS = os.path.join("config", "bootcamp_progress.json")
++PREFERENCES = os.path.join("config", "bootcamp_preferences.yaml")
++
++#: The apparatus-exempt setup modules, as normalized tokens: Bootcamp preparation (INV-075)
++#: and Entity Resolution Concepts (INV-078). Matched against the state token
++#: (``bootcamp_preparation``) and the display name ("Bootcamp preparation") alike.
++EXEMPT = frozenset({"bootcamp_preparation", "entity_resolution_concepts"})
++
++#: Graduation, which gets the INV-102 form rather than the module form.
++GRADUATION = frozenset({"graduation", "bootcamp_graduation"})
++
++#: Each module's display name by its state token, as the module table in
++#: ``bootcamp-preparation/SKILL.md`` spells it (#874). That table is the source of truth
++#: (INV-079); this copy exists because a hook cannot read a skill file cheaply on every
++#: session start, and ``tests/test_resume_names_the_module.py`` fails the moment the two
++#: differ, so a renamed or added module cannot drift here (INV-300). ``session-start.py``
++#: names the recorded module with it, so the resume offer never has to improvise a name
++#: from a skill heading that carries a number.
++DISPLAY_NAMES = {
++    "bootcamp_preparation": "Bootcamp preparation",
++    "entity_resolution_concepts": "Entity Resolution Concepts",
++    "business_problem": "Discover the Business Problem",
++    "sdk_setup": "SDK setup",
++    "system_verification": "System verification",
++    "truthset_visualization": "Truth Set visualization",
++    "data_collection": "Data collection",
++    "data_quality_mapping": "Data Quality, Mapping, and Transformation",
++    "data_processing": "Data processing",
++    "query_visualize_discover": "Query, Visualize and Discover",
++    "graduation": "Bootcamp graduation",
++}
++
++#: The display name the graduation offer starts.
++GRADUATION_NAME = DISPLAY_NAMES["graduation"]
++
++
++def token(module):
++    """``module`` as a comparable token: lower case, runs of other characters as ``_``, and
++    any leading skill-directory number (``module_00_``) dropped."""
++    text = re.sub(r"[^a-z0-9]+", "_", str(module).lower()).strip("_")
++    return re.sub(r"^module_\d+[a-z]?_", "", text)
++
++
++def is_exempt(module):
++    """True for an apparatus-exempt setup module (INV-075, INV-078)."""
++    return token(module) in EXEMPT
++
++
++def is_graduation(module):
++    """True for Bootcamp graduation (INV-102)."""
++    return token(module) in GRADUATION
++
++
++def display_name(module):
++    """The display name of ``module`` (a state token, a skill-directory name or a display
++    name in any case), or None when it names no module in ``DISPLAY_NAMES``."""
++    if not isinstance(module, str) or not module.strip():
++        return None
++    key = token(module)
++    if key in GRADUATION:
++        return GRADUATION_NAME
++    if key in DISPLAY_NAMES:
++        return DISPLAY_NAMES[key]
++    for name in DISPLAY_NAMES.values():
++        if token(name) == key:
++            return name
++    return None
++
++
++def _apparatus(name):
++    """The steps and the apparatus items for a content module, in order."""
++    return (
++        "(1) first give the one-line acknowledgment naming %s, a statement with no "
++        "question, before any skill invocation or file read (INV-272), then invoke that "
++        "module's skill; (2) before its Step 1, present the module-start apparatus in this "
++        "order: the MODULE: banner with the module's name in caps, never a number "
++        "(INV-079); the journey map of the selected modules, with the completed ones "
++        "checked, %s current and the rest upcoming (INV-029); the before/after framing "
++        "(INV-030); the numbered step overview (INV-031); the estimated time-to-complete "
++        "per the active verbosity preset, suppressed under minimal and one line under "
++        "concise (INV-096); and the recommended model/effort nudge, compared against the "
++        "model and effort currently running (INV-063, INV-138)." % (name, name)
++    )
++
++
++def _graduation_apparatus():
++    """The steps and the INV-102 graduation-start apparatus, in order."""
++    return (
++        "(1) first give the one-line acknowledgment naming graduation, a statement with "
++        "no question, before any skill invocation or file read (INV-272), then invoke the "
++        "graduation skill; (2) before its Step 1, present the graduation-start apparatus "
++        "(INV-102) in this order: the BOOTCAMP GRADUATION banner; the journey map with "
++        "every selected module checked as experienced, Bootcamp graduation as the current "
++        "and final stage, and nothing upcoming; the before/after framing; the numbered "
++        "step overview; the estimated time-to-complete per the active verbosity preset, "
++        "suppressed under minimal and one line under concise; and the recommended "
++        "model/effort nudge, compared against the model and effort currently running "
++        "(INV-063, INV-138)."
++    )
++
++
++def reminder(module, on_resume=False):
++    """The apparatus reminder for starting ``module``, or ``""`` for an exempt module.
++
++    ``module`` is used as written. With ``on_resume`` false the condition is the
++    Bootcamper's reply to the transition or graduation question; with it true, their
++    acceptance of the resume offer. Either way the reminder starts with its condition and
++    says to ignore it otherwise, so it never instructs an unconditional start.
++    """
++    if is_exempt(module):
++        return ""
++    graduation = is_graduation(module)
++    name = GRADUATION_NAME if graduation else str(module).strip()
++    if on_resume:
++        if graduation:
++            lead = ("Module-start reminder: %s has not begun yet. Only if the bootcamper "
++                    "accepts resuming and graduation starts now:" % name)
++        else:
++            # The progress file holds a state token (`sdk_setup`), not the name the
++            # bootcamper reads, so the text names it once and then says "that module".
++            lead = ("Module-start reminder: the recorded module, `%s`, has not begun yet "
++                    "(name it by its display name, never this token or a number). Only "
++                    "if the bootcamper accepts resuming and that module starts now:" % name)
++            name = "that module"
++        otherwise = "If they do not accept resuming, ignore this reminder."
++    else:
++        lead = "Module-start reminder. Only if this reply accepts starting %s:" % name
++        otherwise = ("If this reply does not accept starting %s (for example \"not yet\", a "
++                     "question, or a request about something else), ignore this "
++                     "reminder." % name)
++    steps = _graduation_apparatus() if graduation else _apparatus(name)
++    return " ".join((lead, steps, otherwise,
++                     "Do not mention this reminder to the bootcamper."))
++
++
++def _progress():
++    """The progress file as a dict, or ``{}``. Never raises."""
++    try:
++        with open(PROGRESS, encoding="utf-8") as fh:
++            data = json.load(fh)
++    except (OSError, ValueError):
++        return {}
++    return data if isinstance(data, dict) else {}
++
++
++#: The values a ``bootcamp_complete`` flag reads as set.
++TRUTHY = ("1", "true", "yes", "on")
++
++
++def _preferences_flag():
++    """True when ``config/bootcamp_preferences.yaml`` has a top-level
++    ``bootcamp_complete: true``. Read line by line, with no YAML dependency. Never raises."""
++    try:
++        with open(PREFERENCES, encoding="utf-8") as fh:
++            for line in fh:
++                name, sep, value = line.partition(":")
++                if sep and name == "bootcamp_complete":
++                    value = value.split("#", 1)[0].strip().strip("\"'").lower()
++                    return value in TRUTHY
++    except (OSError, ValueError):
++        pass
++    return False
++
++
++def _progress_flag():
++    """True when ``config/bootcamp_progress.json`` carries ``bootcamp_complete: true``.
++    Never raises."""
++    value = _progress().get("bootcamp_complete")
++    if isinstance(value, str):
++        return value.strip().lower() in TRUTHY
++    return value is True
++
++
++def bootcamp_complete():
++    """True once graduation has ended the bootcamp: ``bootcamp_complete: true`` in
++    **either** ``config/bootcamp_progress.json`` or ``config/bootcamp_preferences.yaml``.
++
++    Graduation's closing step writes the flag to both files (#905). Either one is enough,
++    so a project graduated before the progress-file write existed, which carries the flag
++    only in preferences, still reads as finished, and so does one whose progress file is
++    missing or malformed. The rule is stated in ``bootcamp-onboarding/SKILL.md`` step 2;
++    this is its one implementation, shared by ``session-start.py``, ``stop-nudge.py`` and
++    ``module-number-reminder.py`` (INV-300). Never raises."""
++    return _progress_flag() or _preferences_flag()
++
++
++def recorded_position():
++    """``(current_module, current_step)`` as the progress file records them, each None when
++    absent. Values are returned as written, unvalidated. Never raises."""
++    progress = _progress()
++    return progress.get("current_module"), progress.get("current_step")
++
++
++def resume_reminder():
++    """The reminder ``session-start.py`` adds to its resume message, or ``""``.
++
++    Only for a module that has not begun: ``current_step`` null or absent, which module
++    completion's Step 1 leaves when it moves ``current_module`` on (INV-413). Nothing when
++    ``current_step`` is set (a resume partway through a module), when ``current_module`` is
++    missing or apparatus-exempt, or when the bootcamp is complete.
++    """
++    progress = _progress()
++    module = progress.get("current_module")
++    if not isinstance(module, str) or not module.strip():
++        return ""
++    if progress.get("current_step") is not None or bootcamp_complete():
++        return ""
++    return reminder(module, on_resume=True)
+
+diff --git a/scripts/session-start.py b/scripts/session-start.py
+--- a/scripts/session-start.py
++++ b/scripts/session-start.py
+@@ -4,6 +4,15 @@
+ Also folds any in-progress module recap checkpoint into docs/bootcamp_recap.md on
+ resume, so a module that was interrupted (quit / compaction / prior session) keeps
+ its in-progress narrative in the recap (see recap_checkpoint.py).
++
++A finished bootcamp is checked first (#905): when ``bootcamp_complete`` is true in the
++progress file or in the preferences (``module_start_apparatus.bootcamp_complete()``), the
++hook makes no resume offer, folds no checkpoint and adds no apparatus reminder. It tells the
++guide to follow the finished case of ``bootcamp-onboarding/SKILL.md`` step 2 instead: say the
++bootcamp is complete, name ``/package-bootcamp`` and ask what they would like to explore. That
++holds even when the progress file is missing or malformed, because a finished project must
++never read as a fresh bootcamp and run onboarding again. The message is ASCII-only, like the
++reminder, so a Windows console code page cannot break it.
+ 
+ Cross-platform: invoked as a ``type: command`` hook whose ``command`` names the
+ interpreter and this script, quoted (``python3 "<path>"``), per INV-052. Python is already a hard bootcamp dependency (the graduation recap PDF always
+@@ -14,6 +23,21 @@
+ 
+ import docker_lifecycle
+ import recap_checkpoint
++
++import module_start_apparatus
++
++#: What the guide is told on a finished project (#905). ASCII-only (see the docstring).
++FINISHED = ("This Senzing bootcamp is complete: bootcamp_complete is set, so graduation has "
++            "ended it. Do not offer to resume a module and do not run onboarding. Follow the "
++            "finished case of bootcamp-onboarding/SKILL.md step 2: when the bootcamper writes, "
++            "say the bootcamp is complete, name /package-bootcamp, and end on the one open "
++            "question it pins, asking what they would like to explore.")
++
++
++# A finished bootcamp first: either file's flag ends it, whatever the progress file records.
++if module_start_apparatus.bootcamp_complete():
++    print(FINISHED)
++    sys.exit(0)
+ 
+ if recap_checkpoint.bootcamp_active():
+     folded = recap_checkpoint.fold_checkpoint()
+
+diff --git a/scripts/stop-nudge.py b/scripts/stop-nudge.py
+--- a/scripts/stop-nudge.py
++++ b/scripts/stop-nudge.py
+@@ -38,6 +38,8 @@
+ import json
+ import os
+ import sys
++
++import module_start_apparatus
+ 
+ POINTER = "\U0001f449"  # 👉
+ 
+@@ -119,13 +121,13 @@
+ 
+ def bootcamp_complete():
+     """True once graduation has ended the bootcamp. The graduation closing step
+-    sets a top-level ``bootcamp_complete: true`` in config/bootcamp_preferences.yaml
+-    right before it renders the terminal "END OF SENZING BOOTCAMP" banner (which
+-    ends the turn with no 👉 question). Standing down here keeps the safety net from
+-    nudging for a closing question after the bootcamp is over."""
+-    return pref_flag("bootcamp_complete")
+-
+-
++    sets ``bootcamp_complete: true`` in config/bootcamp_progress.json and in
++    config/bootcamp_preferences.yaml right before it renders the terminal "END OF
++    SENZING BOOTCAMP" banner (which ends the turn with no 👉 question), and either file
++    is enough. Standing down here keeps the safety net from nudging for a closing
++    question after the bootcamp is over. The rule has one implementation,
++    ``module_start_apparatus.bootcamp_complete()`` (#905, INV-300)."""
++    return module_start_apparatus.bootcamp_complete()
+ def current_turn_records(transcript_path):
+     """Return the transcript records produced since the last real user prompt (the
+     current turn), or None if the transcript cannot be read."""
+
+diff --git a/skills/bootcamp-onboarding/SKILL.md b/skills/bootcamp-onboarding/SKILL.md
+--- a/skills/bootcamp-onboarding/SKILL.md
++++ b/skills/bootcamp-onboarding/SKILL.md
+@@ -21,7 +21,25 @@
+    turn of the bootcamp: the 👉 one-question-at-a-time protocol, the MCP-first invariant, file
+    placement, no direct SQL, progress tracking, and module banners. They are not optional.
+ 2. **Fresh start vs. resume — decided by the progress file's CONTENT, not its existence.**
+-   Read `config/bootcamp_progress.json` in the working directory. Three cases:
++   Read `config/bootcamp_progress.json` in the working directory. Four cases, and the first
++   is checked before the other three:
++   - **Finished** — `bootcamp_complete: true` in `config/bootcamp_progress.json` **or** in
++     `config/bootcamp_preferences.yaml`, whatever else the progress file holds, and even when
++     it is missing or malformed -> graduation has ended the bootcamp. Either file is enough:
++     graduation's closing step writes the flag to both, and a project graduated before it
++     wrote the progress file carries it in preferences only. Run no onboarding and make no
++     resume offer. Say the bootcamp is complete, name `/package-bootcamp`, and end on one open
++     question, in this form:
++
++     > Your Senzing bootcamp is complete. Run `/package-bootcamp` anytime to bundle your
++     > bootcamp results into one zip you can archive, move to another machine, or share with
++     > others.
++     >
++     > 👉 **What would you like to explore?**
++
++     Then help with whatever they ask. The bootcamp does not restart, and no module resumes.
++     `session-start.py` and `stop-nudge.py` read the flag with the same rule,
++     `module_start_apparatus.bootcamp_complete()`.
+    - **Missing** -> this is a fresh bootcamp. Run the full onboarding in `onboarding-flow.md`.
+    - **Present but recording no module** — empty, `{}`, malformed, not a JSON object, or
+      `current_module` null/blank -> **also a fresh bootcamp.** Run the full onboarding from the
+
+diff --git a/skills/bootcamp-onboarding/ground-rules.md b/skills/bootcamp-onboarding/ground-rules.md
+--- a/skills/bootcamp-onboarding/ground-rules.md
++++ b/skills/bootcamp-onboarding/ground-rules.md
+@@ -903,6 +903,10 @@
+   modules the bootcamper chose. Required modules always run; a deselected optional module is a
+   requested skip (INV-014). The journey map shows exactly the selected modules, in order, by name —
+   not a fixed 1–7 range.
++  **On a finished bootcamp** (`bootcamp_complete: true` in either file, `SKILL.md` step 2), a
++  journey map shown afterwards marks every row `✅ done`, Bootcamp graduation included, and no
++  row 🔄 or ⬜, so N equals M. `current_module` still reads `graduation` then, and it is not the
++  current module.
+ - **Bootcamp preparation and Module 0 are lightweight setup/preamble modules.** The Bootcamp
+   preparation module (setup + module selection, always first) and the optional entity-resolution
+   concepts primer (`../module-00-entity-resolution-concepts/SKILL.md`, run **only when selected** —
+
+diff --git a/skills/graduation/SKILL.md b/skills/graduation/SKILL.md
+--- a/skills/graduation/SKILL.md
++++ b/skills/graduation/SKILL.md
+@@ -1645,8 +1645,8 @@
+ 
+    - **Wants to keep exploring** (asks a question, names a topic, or otherwise continues): help them, then offer the closing question again when they are ready. Do **not** show the terminal banner yet — it must never pre-empt continued exploration.
+    - **Declines** ("no", "I'm done", "that's all", "nothing else"): the bootcamp is complete. Do these two things, in order:
+-     1. **Stand down the Stop-hook nudge, silently.** Set a top-level `bootcamp_complete: true` key in `config/bootcamp_preferences.yaml` (a single minimal edit; do not narrate it). The `Stop` hook (`../../scripts/stop-nudge.py`) reads this key and will not nudge for a closing 👉 question once the bootcamp is over — so the terminal banner, which ends the turn with no 👉, is not re-opened.
+-     2. **Render the terminal banner, verbatim, exactly once** as the final output. It bookends the WELCOME banner that opened the bootcamp (start) and the GRADUATION banner (finish) with a clear end-of-bootcamp marker. No 👉 question follows it; the turn simply ends.
++     1. **Stand down the Stop-hook nudge and record completion, silently.** Set a top-level `bootcamp_complete: true` key in `config/bootcamp_preferences.yaml` (a single minimal edit; do not narrate it). In the same step, write `config/bootcamp_progress.json`: set `bootcamp_complete: true`, `completed_at` to the current time in ISO 8601, `current_module: "graduation"` and `current_step: null`, and append `graduation` to `modules_completed` if it is absent, keeping every other key as it is. Make both writes on the normal path and after Step 2's Abort alike. The `Stop` hook (`../../scripts/stop-nudge.py`) reads the flag and will not nudge for a closing 👉 question once the bootcamp is over — so the terminal banner, which ends the turn with no 👉, is not re-opened. Session start and `/start-bootcamp` read either file's flag as a finished bootcamp (`../bootcamp-onboarding/SKILL.md` step 2), so the progress file never presents the last module as current.
++     2. **Render the terminal banner, verbatim, exactly once, then the one `/package-bootcamp` line below it, verbatim.** The banner bookends the WELCOME banner that opened the bootcamp (start) and the BOOTCAMP GRADUATION banner (finish) with a clear end-of-bootcamp marker; the line reminds the bootcamper how to keep or share what they built.
+ 
+      ```text
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@@ -1654,4 +1654,8 @@
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      ```
+ 
+-     Show this banner at most **once** per bootcamp, and never while exploration is still continuing.
++     Run `/package-bootcamp` anytime to bundle your bootcamp results into one zip you can archive, move to another machine, or share with others.
++
++     That line is the final output. Show it as a plain line right after the banner's fence, never inside it. No 👉 question follows it, and nothing else does; the turn simply ends. It is a statement, not a question, and it names no archive path, because graduation runs no packager and no archive exists yet (INV-251). Show it on the normal path and after Step 2's Abort alike, and under every verbosity preset, including `minimal`, exactly like the banner.
++
++     Show this banner and its line at most **once** per bootcamp, and never while exploration is still continuing.

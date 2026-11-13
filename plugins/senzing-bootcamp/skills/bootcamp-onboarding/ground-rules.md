@@ -903,6 +903,10 @@ the 👉 protocol above).
   modules the bootcamper chose. Required modules always run; a deselected optional module is a
   requested skip (INV-014). The journey map shows exactly the selected modules, in order, by name —
   not a fixed 1–7 range.
+  **On a finished bootcamp** (`bootcamp_complete: true` in either file, `SKILL.md` step 2), a
+  journey map shown afterwards marks every row `✅ done`, Bootcamp graduation included, and no
+  row 🔄 or ⬜, so N equals M. `current_module` still reads `graduation` then, and it is not the
+  current module.
 - **Bootcamp preparation and Module 0 are lightweight setup/preamble modules.** The Bootcamp
   preparation module (setup + module selection, always first) and the optional entity-resolution
   concepts primer (`../module-00-entity-resolution-concepts/SKILL.md`, run **only when selected** —
