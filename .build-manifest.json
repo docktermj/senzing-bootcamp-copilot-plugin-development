@@ -301,8 +301,8 @@
       "output": "6f799074f3ce8e1a01e2ab0f5c57abee1ef7b03ea16b6ce78b314e5972664bda"
     },
     "skills/module-05-data-quality-mapping/phase1-quality-assessment.md": {
-      "generated": "d10ea4e029beb62a18fe8f7672563f4a71c5c1993072cfc049007dde8e1a5473",
-      "output": "d10ea4e029beb62a18fe8f7672563f4a71c5c1993072cfc049007dde8e1a5473"
+      "generated": "8417cc58f2df11ecf04e15d5b36bacaf0d2a25a65828e0ec82d8ea9982b6ac8a",
+      "output": "8417cc58f2df11ecf04e15d5b36bacaf0d2a25a65828e0ec82d8ea9982b6ac8a"
     },
     "skills/module-05-data-quality-mapping/phase2-data-mapping.md": {
       "generated": "04df372ff0598b2546f06882e960781e41e869bf43dc68de8d78a2fb247399c7",
@@ -369,6 +369,10 @@
     {
       "id": "module-05-compatible-python",
       "sha256": "055e1416a25656966c8cb6c2b8c32d63c370e82d1515de8aeec9694a0f06c580"
+    },
+    {
+      "id": "module-05-final-normalization-pass",
+      "sha256": "39bfe6597361816478e8cacacd892a508f9dd7bffc6302c92e6ce9286bcdd158"
     }
   ]
 }

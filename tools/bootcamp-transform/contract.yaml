@@ -162,6 +162,16 @@
         "commit": "101c228d0930a54580b90216e1f8b41461b3daf4"
       },
       "reason": "Backport the parent analyzer Python gate and compatible-interpreter probe until the pinned parent release includes them."
+    },
+    {
+      "id": "module-05-final-normalization-pass",
+      "issue": "https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development/issues/56",
+      "patch": "tools/bootcamp-transform/patches/module-05-final-normalization-pass.patch",
+      "upstream": {
+        "issue": "https://github.com/docktermj/senzing-bootcamp-claude-plugin-development/issues/930",
+        "commit": "8328eeb49568d2330ad9a09c984873fc459ff2d2"
+      },
+      "reason": "Backport the merged parent final-normalization pass until the pinned 0.6.1 release includes it."
     }
   ],
   "substitutions": [
