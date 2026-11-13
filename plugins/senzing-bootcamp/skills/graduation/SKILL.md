@@ -1340,23 +1340,42 @@ the files are exactly as they were before this paragraph.
     as a subset → omit that sentence.
   - **Where `integration_targets` is known** (INV-097), name those systems in **Project Overview** as what the resolved entities are meant to feed, and in **Configuration** as the integration points a reader will need to wire up — the resolved data exists to reach them, so a README that never mentions them describes half the job. Absent → omit; never write "none" or a placeholder.
 - **`production/MIGRATION_CHECKLIST.md`:** `- [ ]` checkboxes under six sections (Database, Security, Licensing, Performance, Data, Deployment). Because the bootcamp does not include dedicated performance/security/monitoring/deployment modules, add a note at the top: "⚠️ Some production topics (performance, security, monitoring, deployment) are not covered in depth during the bootcamp: complete these items before deploying," and mark those items with ⚠️.
+  - **The Database section MUST carry the production-database item** — ⚠️ *"SQLite is an
+    evaluation and starter database: before deploying, move to a supported production database.
+    Senzing's documentation recommends PostgreSQL for anything beyond evaluation. If
+    `docker-compose.yml` or `.env.example` points at SQLite, this starter is not ready to deploy
+    unchanged."*
+    Ship it whatever `database_type` is: a PostgreSQL project confirms it and ticks the box. It
+    asks for a migration the team carries out; graduation changes no template and migrates no
+    data. Do **not** say SQLite cannot run in production: the documentation's wording is a
+    recommendation, *"For anything beyond evaluation, use PostgreSQL"*, from the SQLite
+    performance answer that `search_docs(query='SQLite evaluation PostgreSQL production database
+    recommendation')` ranks first.
   - **The Performance section MUST carry the DEFAULT-flags item** — ⚠️ *"Replace `*_DEFAULT_FLAGS`
-    composites in `production/src/` with the explicit `SZ_*` flags whose output your code actually
-    consumes — **except the export call**, where `SZ_ENTITY_DEFAULT_FLAGS` is the documented
-    choice and hand-assembling `SZ_ENTITY_INCLUDE_*` members has been observed to drop
-    `RELATED_ENTITIES` entirely, with no error."*
-    ⛔ **(INV-287) Ship the exception with the item, never the item alone.** The bare
-    instruction points at the one call where following it silently loses every relationship
-    (`../module-06-data-processing/phaseD-validation.md`), and a checklist a Bootcamper works
-    through unattended is exactly where an unqualified rule does that damage.
+    composites in `production/src/`, **including the export call**, with the explicit `SZ_*` flags
+    whose output your code actually consumes. On the export call a replacement can drop output
+    with no error: hand-assembling `SZ_ENTITY_INCLUDE_*` members has been observed to drop
+    `RELATED_ENTITIES` entirely. Before you adopt a replacement there, export with it and confirm
+    that every field and relationship your code reads is still present. Until you have, keep the
+    current flags and leave this item unchecked."*
+    ⛔ **(INV-287) Ship the exception with the item, never the item alone.** Here the exception
+    is a qualification, not an exemption. The bare instruction points at the one call where
+    following it blindly silently loses every relationship (`../module-06-data-processing/phaseD-validation.md`), and a checklist a
+    Bootcamper works through unattended is exactly where an unqualified rule does that damage.
+    The export call is not exempt: `SZ_EXPORT_DEFAULT_FLAGS` is itself a composite whose members
+    include `SZ_ENTITY_DEFAULT_FLAGS` (`get_sdk_reference(topic='flags',
+    filter='SZ_EXPORT_DEFAULT_FLAGS')`, MCP server 1.46.0, 2026-11-10), so the caution below
+    covers it as much as any other call. Name no explicit export flag set in the item: none has
+    been verified to carry everything a given project consumes, so the item asks the team to
+    verify their own.
     Give the reason, because it is what makes the item non-obvious: the server states
     that DEFAULT composites are for getting started and exploration rather than production, that
     their **membership may change between Senzing versions**, and that pinned code can therefore
     *"silently change what it returns after an upgrade — no error is raised"*; they also over-fetch,
     costing engine work and response size (`get_sdk_reference(topic='flags', …)` top-level
-    `caution`, MCP server 1.32.9, 2026-08-12). This matters here specifically because `src/query/**`
-    is copied into `production/src/` verbatim, so the bootcamp's exploration-shaped flag choice
-    becomes their shipped code. The bootcamp is right to teach the composites
+    `caution`, MCP server 1.32.9, 2026-08-12; re-confirmed word for word on 1.46.0, 2026-11-10).
+    This matters here specifically because `src/query/**` is copied into `production/src/`
+    verbatim, so the bootcamp's exploration-shaped flag choice becomes their shipped code. The bootcamp is right to teach the composites
     (`../module-07-query-visualize-discover/phase1-query-visualize.md` relays the same caution) —
     this checklist is where the production correction belongs.
   - **The Deployment section is where `deployment_target`/`cloud_provider` lands** (INV-097): name the stated target in its heading or first item, and make its checkboxes the ones that target actually needs (a cloud target → managed database, secret storage, image registry, network egress to nothing external; Kubernetes → manifests/Helm, resource limits, liveness probes; on-premises → host provisioning, backup schedule). ⛔ Still ⚠️-marked and still not covered in depth by the bootcamp — naming the target makes the list *relevant*, not authoritative, and it must not read as a deployment guide the bootcamp did not give. Absent → the generic six-section list exactly as before.

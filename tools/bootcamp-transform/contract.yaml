@@ -132,6 +132,16 @@
         ]
       },
       "reason": "Backport only the #463 and #675 prerequisites and #883 visualization fix until the pinned parent tag contains them; preserve the pinned graph cap and ranking."
+    },
+    {
+      "id": "graduation-production-checklist",
+      "issue": "https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development/issues/47",
+      "patch": "tools/bootcamp-transform/patches/graduation-production-checklist.patch",
+      "upstream": {
+        "issue": "https://github.com/docktermj/senzing-bootcamp-claude-plugin-development/issues/904",
+        "commit": "86fa6fb28589c1e1dac8cd04a0f77778d1965c19"
+      },
+      "reason": "Backport the parent production-checklist guidance for explicit production flags and database selection without changing starter code or migrating data."
     }
   ],
   "substitutions": [
