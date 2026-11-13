@@ -240,9 +240,13 @@ has, after its Module Completion already ran: this module's `SKILL.md` → "Resu
   contract.
 - Never generate direct SQL against `database/G2C.db`: all data access goes through Senzing
   SDK methods (counts/stats via `reporting_guide`).
-- Always validate with `analyze_record` before loading, passing its **required**
-  `workspace_dir='data/mapping'` — the call fails without it, and the parameter is what keeps the
-  analyzer script and its reports inside the project rather than in `/tmp`.
+- Before loading, validate with `analyze_record` after following `phase2-data-mapping.md` →
+  "Analyzer Python requirement for `sz_json_analyzer.py` only." Pass its **required**
+  `workspace_dir='data/mapping'` — the call fails without it, and the parameter keeps the
+  analyzer script and its reports inside the project rather than in `/tmp`. Reuse this session's
+  selected interpreter explicitly. If the check has not run this session (for example, Phase 3
+  was resumed), run the check and probe before the analyzer. If the **No** path was taken or
+  installation failed, skip this analyzer run and record why; do not ask again unless requested.
 
 ## Success criteria
 

@@ -152,6 +152,16 @@
         "commit": "17a946698892c6b4673c4e106ee9225354838000"
       },
       "reason": "Backport the parent completion-state fix before a containing parent tag, including helper files absent from pinned 0.6.1."
+    },
+    {
+      "id": "module-05-compatible-python",
+      "issue": "https://github.com/docktermj/senzing-bootcamp-copilot-plugin-development/issues/55",
+      "patch": "tools/bootcamp-transform/patches/module-05-compatible-python.patch",
+      "upstream": {
+        "issue": "https://github.com/docktermj/senzing-bootcamp-claude-plugin-development/issues/931",
+        "commit": "101c228d0930a54580b90216e1f8b41461b3daf4"
+      },
+      "reason": "Backport the parent analyzer Python gate and compatible-interpreter probe until the pinned parent release includes them."
     }
   ],
   "substitutions": [
