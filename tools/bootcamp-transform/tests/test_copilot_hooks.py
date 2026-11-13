@@ -285,6 +285,76 @@ class CopilotHookTests(unittest.TestCase):
         (workspace / "config/bootcamp_progress.json").write_text("{}")
         return self.run_hook(action, workspace, payload), workspace
 
+    def make_project(self, progress: dict | str | None, preferences: str | None = None) -> Path:
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        workspace = Path(temp.name)
+        (workspace / "config").mkdir()
+        if progress is not None:
+            contents = json.dumps(progress) if isinstance(progress, dict) else progress
+            (workspace / "config/bootcamp_progress.json").write_text(contents, encoding="utf-8")
+        if preferences is not None:
+            (workspace / "config/bootcamp_preferences.yaml").write_text(
+                preferences, encoding="utf-8"
+            )
+        return workspace
+
+    def test_agent_stop_stays_silent_for_progress_only_completion(self) -> None:
+        workspace = self.make_project({
+            "current_module": "graduation",
+            "bootcamp_complete": True,
+        }, "bootcamp_complete: false\n")
+        result = self.run_hook("agent-stop", workspace, {
+            "stop_hook_active": False,
+            "last_assistant_message": "END OF SENZING BOOTCAMP",
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_agent_stop_honors_legacy_preferences_only_completion(self) -> None:
+        for flag in ("bootcamp_complete: true\n", "bootcamp_complete: 'YES'\n"):
+            with self.subTest(flag=flag):
+                workspace = self.make_project(
+                    {"current_module": "query_visualize_discover"},
+                    flag,
+                )
+                result = self.run_hook("agent-stop", workspace, {
+                    "stop_hook_active": False,
+                    "last_assistant_message": "END OF SENZING BOOTCAMP",
+                })
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "")
+
+    def test_session_start_announces_completion_without_resume(self) -> None:
+        workspace = self.make_project({
+            "current_module": "graduation",
+            "bootcamp_complete": True,
+        })
+        result = self.run_hook("session-start", workspace, {})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        context = json.loads(result.stdout)["additionalContext"]
+        self.assertIn("bootcamp is complete", context)
+        self.assertIn("the package-bootcamp skill", context)
+        self.assertNotIn("A Senzing bootcamp is in progress", context)
+
+    def test_user_prompt_does_not_create_checkpoint_after_completion(self) -> None:
+        cases = (
+            ({
+                "current_module": "graduation",
+                "bootcamp_complete": True,
+            }, "bootcamp_complete: false\n"),
+            ({
+                "current_module": "query_visualize_discover",
+            }, "bootcamp_complete: true\n"),
+        )
+        for progress, preferences in cases:
+            with self.subTest(progress=progress, preferences=preferences):
+                workspace = self.make_project(progress, preferences)
+                result = self.run_hook("user-prompt", workspace, {"prompt": "Continue"})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertFalse((workspace / "docs/progress/recap_checkpoint.md").exists())
+
     # Assembled at runtime so no secret-shaped literal sits in the repository.
     SYNTHETIC_SECRET = "AKIA" + "1234567890ABCDEF"
 

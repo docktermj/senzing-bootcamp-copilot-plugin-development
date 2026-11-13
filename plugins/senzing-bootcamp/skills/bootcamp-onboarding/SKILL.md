@@ -21,7 +21,25 @@ bootcamper through setup and into the numbered module skills, one guided step at
    turn of the bootcamp: the 👉 one-question-at-a-time protocol, the MCP-first invariant, file
    placement, no direct SQL, progress tracking, and module banners. They are not optional.
 2. **Fresh start vs. resume — decided by the progress file's CONTENT, not its existence.**
-   Read `config/bootcamp_progress.json` in the working directory. Three cases:
+   Read `config/bootcamp_progress.json` in the working directory. Four cases, and the first
+   is checked before the other three:
+   - **Finished** — `bootcamp_complete: true` in `config/bootcamp_progress.json` **or** in
+     `config/bootcamp_preferences.yaml`, whatever else the progress file holds, and even when
+     it is missing or malformed -> graduation has ended the bootcamp. Either file is enough:
+     graduation's closing step writes the flag to both, and a project graduated before it
+     wrote the progress file carries it in preferences only. Run no onboarding and make no
+     resume offer. Say the bootcamp is complete, name `the package-bootcamp skill`, and end on one open
+     question, in this form:
+
+     > Your Senzing bootcamp is complete. Run `the package-bootcamp skill` anytime to bundle your
+     > bootcamp results into one zip you can archive, move to another machine, or share with
+     > others.
+     >
+     > 👉 **What would you like to explore?**
+
+     Then help with whatever they ask. The bootcamp does not restart, and no module resumes.
+     `session-start.py` and `stop-nudge.py` read the flag with the same rule,
+     `module_start_apparatus.bootcamp_complete()`.
    - **Missing** -> this is a fresh bootcamp. Run the full onboarding in `onboarding-flow.md`.
    - **Present but recording no module** — empty, `{}`, malformed, not a JSON object, or
      `current_module` null/blank -> **also a fresh bootcamp.** Run the full onboarding from the

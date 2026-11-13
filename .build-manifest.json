@@ -109,8 +109,8 @@
       "output": "990eb63c93aaa98af32948c89417948376c613c85852f70423c0656ba87773c7"
     },
     "scripts/copilot-hooks.py": {
-      "generated": "926b8b08d4dd8c34587247584e8e215ef3037abdb6873febe8ecc9a55516a9fe",
-      "output": "926b8b08d4dd8c34587247584e8e215ef3037abdb6873febe8ecc9a55516a9fe"
+      "generated": "32d528ad4ea00a99fa603c5bedbe492b12ad7eea7d0a9bc4eb0cc5adda1ecd46",
+      "output": "32d528ad4ea00a99fa603c5bedbe492b12ad7eea7d0a9bc4eb0cc5adda1ecd46"
     },
     "scripts/docker_lifecycle.py": {
       "generated": "f59f3f81e6738e5aab5e4002ab7478515207b3699775ffcba8d87d88d49f73a9",
@@ -135,6 +135,14 @@
     "scripts/generate_recap_video.py": {
       "generated": "5cdc84cfb4779ffc716f100e845b9d531b45670959eaa3c6730aabb53f7615dd",
       "output": "5cdc84cfb4779ffc716f100e845b9d531b45670959eaa3c6730aabb53f7615dd"
+    },
+    "scripts/module-number-reminder.py": {
+      "generated": "0dd43253212812bc5a0094dcb44638d6f81502306566a6f8b79cf9a4dd2330c0",
+      "output": "0dd43253212812bc5a0094dcb44638d6f81502306566a6f8b79cf9a4dd2330c0"
+    },
+    "scripts/module_start_apparatus.py": {
+      "generated": "5e2307e741a14d19439acc9499a5ba4db46c1e88a25ee6fef9559a587341d457",
+      "output": "5e2307e741a14d19439acc9499a5ba4db46c1e88a25ee6fef9559a587341d457"
     },
     "scripts/normalize_docs_markdown.py": {
       "generated": "270fe1b5e8ea3743ae2088cfac24f64565fe4ee8197af373eafd1b3135ef0b87",
@@ -169,12 +177,16 @@
       "output": "ddc06a54ffbd33ae53f580546242147169165613260b53f64dd93359edfeea19"
     },
     "scripts/session-start.py": {
-      "generated": "9f7cee0dbdfaea221b63d74d2ef3fdbf2c6f600801cad685628ea85ff670115e",
-      "output": "9f7cee0dbdfaea221b63d74d2ef3fdbf2c6f600801cad685628ea85ff670115e"
+      "generated": "372a598aee900557158713800db3041b2404ff1283b727cc45308aa270a52507",
+      "output": "372a598aee900557158713800db3041b2404ff1283b727cc45308aa270a52507"
     },
     "scripts/stop-nudge.py": {
-      "generated": "39ebcb740a627818d93e006d3e62bbe6be31fbb61437f16d197c3307832b2842",
-      "output": "39ebcb740a627818d93e006d3e62bbe6be31fbb61437f16d197c3307832b2842"
+      "generated": "a193193c0efd94fa008716958560acd41352c48b8ece626bdc8563b989e99162",
+      "output": "a193193c0efd94fa008716958560acd41352c48b8ece626bdc8563b989e99162"
+    },
+    "scripts/transition_reply.py": {
+      "generated": "27dcbd50ce5091b0efc771a247f612f9a7881303b0ba733db6d8dedcb59e50cf",
+      "output": "27dcbd50ce5091b0efc771a247f612f9a7881303b0ba733db6d8dedcb59e50cf"
     },
     "scripts/vendor/d3.v7.min.js": {
       "generated": "f2094bbf6141b359722c4fe454eb6c4b0f0e42cc10cc7af921fc158fceb86539",
@@ -185,16 +197,16 @@
       "output": "d0e75234da7d9c798d59e14d85bca33b60f11b1dbf8e675618c2bf434efda5b7"
     },
     "skills/bootcamp-onboarding/SKILL.md": {
-      "generated": "07b60aefcb3f9862155067100b8f713296418b66948f0265f4a609571e8a87a7",
-      "output": "07b60aefcb3f9862155067100b8f713296418b66948f0265f4a609571e8a87a7"
+      "generated": "68e039d2642f4355791062cced30ba77fd277769f9886f1dcfbca362b8868321",
+      "output": "68e039d2642f4355791062cced30ba77fd277769f9886f1dcfbca362b8868321"
     },
     "skills/bootcamp-onboarding/feedback.md": {
       "generated": "502b8573054c0392acd6cff0ddeb88f6a693fd14c816dc7f65b3f503da92744d",
       "output": "502b8573054c0392acd6cff0ddeb88f6a693fd14c816dc7f65b3f503da92744d"
     },
     "skills/bootcamp-onboarding/ground-rules.md": {
-      "generated": "c26525451c759d19bcdda06e5c63343e39571ea6a0dff52b7410c6a749be50a6",
-      "output": "c26525451c759d19bcdda06e5c63343e39571ea6a0dff52b7410c6a749be50a6"
+      "generated": "05110eaf81eae67094d5c330113952cc00de99259ab39d36af749f2ccd6bc887",
+      "output": "05110eaf81eae67094d5c330113952cc00de99259ab39d36af749f2ccd6bc887"
     },
     "skills/bootcamp-onboarding/module-completion.md": {
       "generated": "6a28d0da0b62e517136e481bde803869830dc7a8dcf13a57f7bd5fc6b581741b",
@@ -217,8 +229,8 @@
       "output": "3b2f9549f963f4f96644ac38cfb27fcf76dfe3d2d982b4106fae0a3b1cb71723"
     },
     "skills/graduation/SKILL.md": {
-      "generated": "47195c8497d639f89023f8c4b8a7d14cd0eb4b92556b0ab4efcebea3b928694d",
-      "output": "47195c8497d639f89023f8c4b8a7d14cd0eb4b92556b0ab4efcebea3b928694d"
+      "generated": "506a2e12401b92b63823610f7a99f26c6cba1273f5d53d170be2f404eba1fbd0",
+      "output": "506a2e12401b92b63823610f7a99f26c6cba1273f5d53d170be2f404eba1fbd0"
     },
     "skills/graduation/database-backup.md": {
       "generated": "48a562fb3bccfc1d8e71d5b5795ab653248be9a6e803b436b0ec9369f4e1566c",
@@ -349,6 +361,10 @@
     {
       "id": "graduation-production-checklist",
       "sha256": "4237281bfea2ea838f7eb648d3831b158d4a0bfbcae81e5f0a7e27ff38608f68"
+    },
+    {
+      "id": "graduation-completion-state",
+      "sha256": "2207e8625043658e415a7bb881fee7aa77ef6b1efde006b2f6d73b1a20e5a591"
     }
   ]
 }

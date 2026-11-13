@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import time
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +40,22 @@ def _run(script: str, payload: dict[str, Any] | None = None) -> subprocess.Compl
     )
 
 
+def _bootcamp_complete() -> bool:
+    helper_path = PLUGIN_ROOT / "scripts" / "module_start_apparatus.py"
+    spec = spec_from_file_location("copilot_module_start_apparatus", helper_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Could not load completion helper: {helper_path}")
+    helper = module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    predicate = getattr(helper, "bootcamp_complete", None)
+    if not callable(predicate):
+        raise RuntimeError(f"Completion helper has no bootcamp_complete(): {helper_path}")
+    result = predicate()
+    if not isinstance(result, bool):
+        raise RuntimeError(f"Completion helper returned a non-boolean result: {helper_path}")
+    return result
+
+
 def _additional_context(result: subprocess.CompletedProcess[str]) -> str:
     if result.returncode:
         raise RuntimeError(result.stderr.strip() or f"hook helper exited {result.returncode}")
@@ -67,7 +84,11 @@ def user_prompt() -> None:
     if "prompt" not in payload and "user_prompt" in payload:
         payload["prompt"] = payload["user_prompt"]
     contexts = []
-    for helper in ("feedback-capture.py", "checkpoint-tick.py"):
+    helpers = ("feedback-capture.py",) if _bootcamp_complete() else (
+        "feedback-capture.py",
+        "checkpoint-tick.py",
+    )
+    for helper in helpers:
         context = _additional_context(_run(helper, payload))
         if context:
             contexts.append(context)
@@ -223,10 +244,7 @@ def agent_stop() -> None:
         return
     if not (Path.cwd() / "config/bootcamp_progress.json").is_file():
         return
-    preferences = Path.cwd() / "config/bootcamp_preferences.yaml"
-    if preferences.is_file() and "bootcamp_complete: true" in preferences.read_text(
-        encoding="utf-8", errors="replace"
-    ).lower():
+    if _bootcamp_complete():
         return
     last_message = payload.get("last_assistant_message") or payload.get("lastAssistantMessage")
     if not isinstance(last_message, str):

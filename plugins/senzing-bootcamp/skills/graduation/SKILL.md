@@ -1645,8 +1645,8 @@ Then stop and wait. This is the single closing question for the whole bootcamp.
 
    - **Wants to keep exploring** (asks a question, names a topic, or otherwise continues): help them, then offer the closing question again when they are ready. Do **not** show the terminal banner yet — it must never pre-empt continued exploration.
    - **Declines** ("no", "I'm done", "that's all", "nothing else"): the bootcamp is complete. Do these two things, in order:
-     1. **Stand down the Stop-hook nudge, silently.** Set a top-level `bootcamp_complete: true` key in `config/bootcamp_preferences.yaml` (a single minimal edit; do not narrate it). The `Stop` hook (`../../scripts/stop-nudge.py`) reads this key and will not nudge for a closing 👉 question once the bootcamp is over — so the terminal banner, which ends the turn with no 👉, is not re-opened.
-     2. **Render the terminal banner, verbatim, exactly once** as the final output. It bookends the WELCOME banner that opened the bootcamp (start) and the GRADUATION banner (finish) with a clear end-of-bootcamp marker. No 👉 question follows it; the turn simply ends.
+     1. **Stand down the Stop-hook nudge and record completion, silently.** Set a top-level `bootcamp_complete: true` key in `config/bootcamp_preferences.yaml` (a single minimal edit; do not narrate it). In the same step, write `config/bootcamp_progress.json`: set `bootcamp_complete: true`, `completed_at` to the current time in ISO 8601, `current_module: "graduation"` and `current_step: null`, and append `graduation` to `modules_completed` if it is absent, keeping every other key as it is. Make both writes on the normal path and after Step 2's Abort alike. The `Stop` hook (`../../scripts/stop-nudge.py`) reads the flag and will not nudge for a closing 👉 question once the bootcamp is over — so the terminal banner, which ends the turn with no 👉, is not re-opened. Session start and `the bootcamp-onboarding skill` read either file's flag as a finished bootcamp (`../bootcamp-onboarding/SKILL.md` step 2), so the progress file never presents the last module as current.
+     2. **Render the terminal banner, verbatim, exactly once, then the one `the package-bootcamp skill` line below it, verbatim.** The banner bookends the WELCOME banner that opened the bootcamp (start) and the BOOTCAMP GRADUATION banner (finish) with a clear end-of-bootcamp marker; the line reminds the bootcamper how to keep or share what they built.
 
      ```text
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1654,4 +1654,8 @@ Then stop and wait. This is the single closing question for the whole bootcamp.
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      ```
 
-     Show this banner at most **once** per bootcamp, and never while exploration is still continuing.
+     Run `the package-bootcamp skill` anytime to bundle your bootcamp results into one zip you can archive, move to another machine, or share with others.
+
+     That line is the final output. Show it as a plain line right after the banner's fence, never inside it. No 👉 question follows it, and nothing else does; the turn simply ends. It is a statement, not a question, and it names no archive path, because graduation runs no packager and no archive exists yet (INV-251). Show it on the normal path and after Step 2's Abort alike, and under every verbosity preset, including `minimal`, exactly like the banner.
+
+     Show this banner and its line at most **once** per bootcamp, and never while exploration is still continuing.
