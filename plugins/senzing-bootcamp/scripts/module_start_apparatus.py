@@ -225,7 +225,7 @@ def bootcamp_complete():
 
 def recorded_position():
     """``(current_module, current_step)`` as the progress file records them, each None when
-    absent. Values are returned as written, unvalidated. Never raises."""
+    absent. Values are returned as written, not validated. Never raises."""
     progress = _progress()
     return progress.get("current_module"), progress.get("current_step")
 

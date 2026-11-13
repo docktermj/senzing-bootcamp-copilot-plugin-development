@@ -141,8 +141,8 @@
       "output": "0dd43253212812bc5a0094dcb44638d6f81502306566a6f8b79cf9a4dd2330c0"
     },
     "scripts/module_start_apparatus.py": {
-      "generated": "17fd142b53013ed2d16d689f7e84b4fe6e5df14590a2704418e5468ef7db791f",
-      "output": "17fd142b53013ed2d16d689f7e84b4fe6e5df14590a2704418e5468ef7db791f"
+      "generated": "5e2307e741a14d19439acc9499a5ba4db46c1e88a25ee6fef9559a587341d457",
+      "output": "5e2307e741a14d19439acc9499a5ba4db46c1e88a25ee6fef9559a587341d457"
     },
     "scripts/normalize_docs_markdown.py": {
       "generated": "270fe1b5e8ea3743ae2088cfac24f64565fe4ee8197af373eafd1b3135ef0b87",
@@ -364,7 +364,7 @@
     },
     {
       "id": "graduation-completion-state",
-      "sha256": "6c26466544eab83c9bd821ee84e91531a209531afdd9074bcb551bf0e5c24cf8"
+      "sha256": "2207e8625043658e415a7bb881fee7aa77ef6b1efde006b2f6d73b1a20e5a591"
     }
   ]
 }
