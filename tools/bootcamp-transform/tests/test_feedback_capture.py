@@ -36,7 +36,33 @@ class FeedbackCaptureTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "")
 
+    def test_exact_business_problem_prompt_does_not_capture_feedback(self) -> None:
+        result = self.run_hook("Discover the Business Problem. This mentions the plugin.")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_fault_attribution_does_not_cross_sentence_boundaries(self) -> None:
+        for boundary in ".!?;":
+            for prompt in (
+                f"The plugin{boundary} broken.",
+                f"Broken{boundary} the plugin.",
+            ):
+                with self.subTest(prompt=prompt):
+                    result = self.run_hook(prompt)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, "")
+
     def test_explicit_plugin_fault_still_captures_feedback(self) -> None:
         result = self.run_hook("The plugin is broken.")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("The bootcamper is submitting bootcamp feedback", result.stdout)
+
+    def test_fault_before_referent_in_same_sentence_captures_feedback(self) -> None:
+        result = self.run_hook("Broken: the plugin.")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("The bootcamper is submitting bootcamp feedback", result.stdout)
+
+    def test_explicit_report_request_still_captures_feedback(self) -> None:
+        result = self.run_hook("Please report an issue.")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("The bootcamper is submitting bootcamp feedback", result.stdout)
