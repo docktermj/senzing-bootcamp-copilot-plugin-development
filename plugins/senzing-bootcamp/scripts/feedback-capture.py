@@ -98,9 +98,9 @@ FEEDBACK = re.compile(
     # An explicit report, already framed as one by the user.
     r"|report (?:an? )?(?:issue|bug|problem|defect)"
     # Fault language WITH a bootcamp/plugin referent - the attributed half. Kept narrow:
-    # the referent must appear near the fault word, not merely somewhere in the prompt.
-    r"|(?:bug|issue|problem|defect|broken|wrong|error)(?:\W+\w+){0,6}?\W+" + _OURS +
-    r"|" + _OURS + r"(?:\W+\w+){0,6}?\W+(?:is |are |seems? )?(?:bug|issue|problem|defect|"
+    # the referent must appear near the fault word in the same sentence.
+    r"|(?:bug|issue|problem|defect|broken|wrong|error)(?:[^\w.!?;]+\w+){0,6}?[^\w.!?;]+" + _OURS +
+    r"|" + _OURS + r"(?:[^\w.!?;]+\w+){0,6}?[^\w.!?;]+(?:is |are |seems? )?(?:bug|issue|problem|defect|"
     r"broken|wrong)"
 )
 

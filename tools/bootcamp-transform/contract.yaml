@@ -209,6 +209,22 @@
     {
       "old": "Always produce `docs/stakeholder_summary_module1.md` — no gate, no 👉 question. It covers problem,",
       "new": "Always produce `docs/stakeholder_summary_module1.md` — no gate, no 👉 question.\n\n⛔ Do not create or update this file before the bootcamper confirms Step 15; create it\nexactly once during Step 16.\n\nIt covers problem,"
+    },
+    {
+      "old": "r\"|(?:bug|issue|problem|defect|broken|wrong|error)(?:\\W+\\w+){0,6}?\\W+\" + _OURS",
+      "new": "r\"|(?:bug|issue|problem|defect|broken|wrong|error)(?:[^\\w.!?;]+\\w+){0,6}?[^\\w.!?;]+\" + _OURS"
+    },
+    {
+      "old": "r\"|\" + _OURS + r\"(?:\\W+\\w+){0,6}?\\W+(?:is |are |seems? )?(?:bug|issue|problem|defect|\"",
+      "new": "r\"|\" + _OURS + r\"(?:[^\\w.!?;]+\\w+){0,6}?[^\\w.!?;]+(?:is |are |seems? )?(?:bug|issue|problem|defect|\""
+    },
+    {
+      "old": "the referent must appear near the fault word, not merely somewhere in the prompt.",
+      "new": "the referent must appear near the fault word in the same sentence."
+    },
+    {
+      "old": "and offer to resume from the last recorded module before doing anything else.",
+      "new": "and offer to resume from the last recorded module before doing anything else. End the resume offer with exactly one 👉 question; when offering choices, use numbered options and add no narration after them."
     }
   ],
   "generated_artifacts": [

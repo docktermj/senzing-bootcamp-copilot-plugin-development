@@ -266,8 +266,14 @@ def agent_stop() -> None:
     print(json.dumps({
         "decision": "block",
         "reason": (
-            "Please finish with the module's prescribed closing question and any numbered "
-            "options. If it was already asked, do not repeat it."
+            "Your last response must end with exactly one 👉 closing question and any "
+            "numbered options it requires. If the module's prescribed question is already "
+            "there but is missing the required format, reformat that existing question in "
+            "place; do not add another question, say that you already asked it, or add "
+            "meta-text. If the prescribed question is not already present, and you just "
+            "finished a step and are yielding, consult the module's skill and ask it once. "
+            "Remove all trailing narration. If you are mid-work or the bootcamp is complete, "
+            "end without a question."
         ),
     }, ensure_ascii=False))
 
