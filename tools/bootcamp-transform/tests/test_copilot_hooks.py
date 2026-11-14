@@ -247,7 +247,7 @@ class CopilotHookTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             response = json.loads(result.stdout)
             self.assertEqual(response["decision"], "block")
-            self.assertIn("do not repeat it", response["reason"])
+            self.assertIn("do not add another question", response["reason"])
 
     def test_agent_stop_reason_is_user_facing_and_never_asks_to_repeat(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -259,8 +259,10 @@ class CopilotHookTests(unittest.TestCase):
                 "last_assistant_message": "Working on it.",
             })
             reason = json.loads(result.stdout)["reason"]
-            self.assertIn("module's prescribed closing question", reason)
-            self.assertIn("do not repeat it", reason)
+            self.assertIn("module's prescribed question", reason)
+            self.assertIn("reformat that existing question in place", reason)
+            self.assertIn("do not add another question", reason)
+            self.assertIn("all trailing narration", reason)
             self.assertNotIn("internal", reason.lower())
 
     def test_agent_stop_blocks_duplicate_closing_markers(self) -> None:
@@ -336,6 +338,19 @@ class CopilotHookTests(unittest.TestCase):
         self.assertIn("bootcamp is complete", context)
         self.assertIn("the package-bootcamp skill", context)
         self.assertNotIn("A Senzing bootcamp is in progress", context)
+
+    def test_session_start_formats_resume_offer_as_one_closing_question(self) -> None:
+        workspace = self.make_project({
+            "current_module": "graduation",
+            "current_step": None,
+            "bootcamp_complete": False,
+        })
+        result = self.run_hook("session-start", workspace, {})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        context = json.loads(result.stdout)["additionalContext"]
+        self.assertIn("End the resume offer with exactly one 👉 question", context)
+        self.assertIn("use numbered options", context)
+        self.assertIn("no narration after them", context)
 
     def test_user_prompt_does_not_create_checkpoint_after_completion(self) -> None:
         cases = (

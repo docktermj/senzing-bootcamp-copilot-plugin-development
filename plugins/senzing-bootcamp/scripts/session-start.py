@@ -45,7 +45,7 @@ if recap_checkpoint.bootcamp_active():
     recap_checkpoint.ensure_checkpoint()
     message = (
         "A Senzing bootcamp is in progress. Read config/bootcamp_progress.json "
-        "and offer to resume from the last recorded module before doing anything else."
+        "and offer to resume from the last recorded module before doing anything else. End the resume offer with exactly one 👉 question; when offering choices, use numbered options and add no narration after them."
     )
     if folded:
         message += (

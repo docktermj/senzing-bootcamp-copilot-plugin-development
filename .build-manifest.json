@@ -109,16 +109,16 @@
       "output": "990eb63c93aaa98af32948c89417948376c613c85852f70423c0656ba87773c7"
     },
     "scripts/copilot-hooks.py": {
-      "generated": "32d528ad4ea00a99fa603c5bedbe492b12ad7eea7d0a9bc4eb0cc5adda1ecd46",
-      "output": "32d528ad4ea00a99fa603c5bedbe492b12ad7eea7d0a9bc4eb0cc5adda1ecd46"
+      "generated": "c3fcd43e2b114a5d4b3b8edbf073573dcfd2debf58091af0505c9262b5873886",
+      "output": "c3fcd43e2b114a5d4b3b8edbf073573dcfd2debf58091af0505c9262b5873886"
     },
     "scripts/docker_lifecycle.py": {
       "generated": "f59f3f81e6738e5aab5e4002ab7478515207b3699775ffcba8d87d88d49f73a9",
       "output": "f59f3f81e6738e5aab5e4002ab7478515207b3699775ffcba8d87d88d49f73a9"
     },
     "scripts/feedback-capture.py": {
-      "generated": "fd8778c689daa561c1a5c5d36eca9e90a82c0c39c38d8d36d428fb547c477436",
-      "output": "fd8778c689daa561c1a5c5d36eca9e90a82c0c39c38d8d36d428fb547c477436"
+      "generated": "4b177509bcce1327919870aeb2c55d00db492c656c9ee4dc18ea3ace45541a6a",
+      "output": "4b177509bcce1327919870aeb2c55d00db492c656c9ee4dc18ea3ace45541a6a"
     },
     "scripts/generate_discoveries_pdf.py": {
       "generated": "3347a6d2759c6b4fc7595d98ef48f637d5a72fd7ed2944ec4bc0f9960a8c37c3",
@@ -177,8 +177,8 @@
       "output": "ddc06a54ffbd33ae53f580546242147169165613260b53f64dd93359edfeea19"
     },
     "scripts/session-start.py": {
-      "generated": "372a598aee900557158713800db3041b2404ff1283b727cc45308aa270a52507",
-      "output": "372a598aee900557158713800db3041b2404ff1283b727cc45308aa270a52507"
+      "generated": "b8f2f4da06f2b710bda84d321cb934dde6504814144e9999a6564e423adf9ffe",
+      "output": "b8f2f4da06f2b710bda84d321cb934dde6504814144e9999a6564e423adf9ffe"
     },
     "scripts/stop-nudge.py": {
       "generated": "a193193c0efd94fa008716958560acd41352c48b8ece626bdc8563b989e99162",
