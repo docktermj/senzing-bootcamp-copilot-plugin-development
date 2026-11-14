@@ -339,6 +339,12 @@ class CopilotHookTests(unittest.TestCase):
         self.assertIn("the package-bootcamp skill", context)
         self.assertNotIn("A Senzing bootcamp is in progress", context)
 
+    def test_session_start_does_not_offer_resume_for_fresh_start(self) -> None:
+        workspace = self.make_project({})
+        result = self.run_hook("session-start", workspace, {})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+
     def test_session_start_formats_resume_offer_as_one_closing_question(self) -> None:
         workspace = self.make_project({
             "current_module": "graduation",
